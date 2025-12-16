@@ -274,14 +274,26 @@ export const ChatPage = () => {
           matchedRules = matchedRulesStr.split(',').map(r => r.trim());
           console.log("✅ Rules matched:", matchedRules);
           
-          // Update rules tracker
-          setRulesTracker(prev => {
-            const updated = { ...prev };
-            matchedRules.forEach(ruleId => {
-              updated[ruleId] = true;
-            });
-            return updated;
+          // Update rules tracker and check completion
+          const updatedTracker = { ...rulesTracker };
+          matchedRules.forEach(ruleId => {
+            updatedTracker[ruleId] = true;
           });
+          setRulesTracker(updatedTracker);
+
+          // Check if ALL rules are now matched
+          const allRulesMatched = Object.values(updatedTracker).every(status => status === true);
+          if (allRulesMatched) {
+            console.log("🎉 All rules matched! Showing completion modal");
+            setCompletionMessage('🎉 Congratulations! You have completed all the rules for this simulation!');
+            setShowCompletionModal(true);
+            await updateChatStatus('completed');
+            
+            // If in path mode, update path progress
+            if (isPathMode && pathId) {
+              await updatePathProgress(true);
+            }
+          }
         } else {
           console.log("⚠️ No rules were matched");
         }
