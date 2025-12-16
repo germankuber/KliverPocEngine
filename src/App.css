@@ -23,3 +23,12 @@
   max-width: 100%;
   box-sizing: border-box;
 }
+
+.main-content-full {
+  flex: 1;
+  width: 100%;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #f9fafb;
+}
