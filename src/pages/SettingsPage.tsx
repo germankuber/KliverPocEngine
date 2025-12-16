@@ -27,6 +27,7 @@ type GlobalPrompts = {
   id: string;
   system_prompt: string;
   evaluation_rule_prompt: string;
+  evaluator_prompt: string;
   langsmith_api_key?: string;
   langsmith_project?: string;
   langsmith_enabled?: boolean;
@@ -100,6 +101,7 @@ export const SettingsPage = () => {
         .update({
           system_prompt: globalPrompts.system_prompt,
           evaluation_rule_prompt: globalPrompts.evaluation_rule_prompt,
+          evaluator_prompt: globalPrompts.evaluator_prompt || '',
           langsmith_api_key: globalPrompts.langsmith_api_key || '',
           langsmith_project: globalPrompts.langsmith_project || '',
           langsmith_enabled: globalPrompts.langsmith_enabled || false,
@@ -243,7 +245,7 @@ export const SettingsPage = () => {
         
         {globalPrompts ? (
           <div className="prompts-form">
-            <Accordion.Root type="multiple" className="accordion-root" defaultValue={['system-prompt', 'evaluation-prompt']}>
+            <Accordion.Root type="multiple" className="accordion-root" defaultValue={['system-prompt', 'evaluation-prompt', 'evaluator-prompt']}>
               
               {/* System Prompt Accordion Item */}
               <Accordion.Item value="system-prompt" className="accordion-item">
@@ -289,6 +291,31 @@ export const SettingsPage = () => {
                       value={globalPrompts.evaluation_rule_prompt}
                       onChange={(value) => setGlobalPrompts({...globalPrompts, evaluation_rule_prompt: value})}
                       placeholder="e.g., Evaluate if the response follows the defined rules and answers appropriately..."
+                      rows={15}
+                    />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
+
+              {/* Evaluator Prompt Accordion Item */}
+              <Accordion.Item value="evaluator-prompt" className="accordion-item">
+                <Accordion.Header className="accordion-header">
+                  <Accordion.Trigger className="accordion-trigger">
+                    <span>Evaluator Prompt</span>
+                    <ChevronDown className="accordion-chevron" />
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="accordion-content">
+                  <div className="form-group">
+                    <p className="form-helper-text">
+                      Additional evaluation criteria and instructions for the AI evaluator.
+                      This complements the evaluation rule prompt with specific guidelines.
+                    </p>
+                    <HighlightedTextarea
+                      id="evaluatorPrompt"
+                      value={globalPrompts.evaluator_prompt || ''}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, evaluator_prompt: value})}
+                      placeholder="e.g., Be strict in evaluation and provide detailed feedback..."
                       rows={15}
                     />
                   </div>
