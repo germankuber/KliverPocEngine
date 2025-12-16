@@ -6,10 +6,14 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import './PathPlayerPage.css';
 
 type Simulation = {
+  id: string;
+  name: string;
+  objective: string;
+  characters?: {
     id: string;
     name: string;
-    character: string;
-    scenario: string;
+    description: string;
+  };
 };
 
 type PathSimulation = {
@@ -61,7 +65,12 @@ export const PathPlayerPage = () => {
             simulation_id,
             order_index,
             max_attempts,
-            simulations(id, name, character, scenario)
+            simulations(
+              id,
+              name,
+              objective,
+              characters(id, name, description)
+            )
           )
         `)
                 .eq('id', pathId)
@@ -302,11 +311,11 @@ export const PathPlayerPage = () => {
 
                             <div className="simulation-content">
                                 <div className="simulation-order">Step {index + 1}</div>
-                                <h3>{pathSim.simulations.name}</h3>
-                                <p className="simulation-character">
-                                    Character: {pathSim.simulations.character}
-                                </p>
-                                <p className="simulation-scenario">{pathSim.simulations.scenario}</p>
+                <h3>{pathSim.simulations.name}</h3>
+                <p className="simulation-character">
+                  Character: {pathSim.simulations.characters?.name || 'N/A'}
+                </p>
+                <p className="simulation-scenario">{pathSim.simulations.objective}</p>
 
                                 <div className="simulation-meta">
                                     {status === 'completed' && (
