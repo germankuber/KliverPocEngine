@@ -1,11 +1,14 @@
 .path-editor-page {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .editor-header {
   margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .back-btn {
@@ -13,24 +16,27 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 .back-btn:hover {
-  background: #e5e7eb;
+  background: white;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .editor-header h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-main);
   margin: 0;
 }
 
@@ -41,10 +47,11 @@
 }
 
 .editor-section {
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .section-header {
@@ -55,19 +62,20 @@
 }
 
 .section-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-main);
   margin: 0;
 }
 
 .form-label {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  font-weight: 500;
-  color: #374151;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--text-main);
   margin-bottom: 1.5rem;
+  font-size: 0.85rem;
 }
 
 .form-label:last-child {
@@ -76,17 +84,21 @@
 
 .form-input,
 .form-textarea {
-  padding: 0.75rem;
+  padding: 0.6rem 0.75rem;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+  color: var(--text-main);
+  font-family: inherit;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -99,49 +111,52 @@
 }
 
 .form-checkbox input {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .form-checkbox span {
-  color: #374151;
+  color: var(--text-main);
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .add-simulation-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: #667eea;
+  padding: 0.6rem 1rem;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 6px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .add-simulation-btn:hover {
-  background: #5568d3;
+  opacity: 0.9;
 }
 
 /* Simulation Picker */
 .simulation-picker {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   padding: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .simulation-picker h3 {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-transform: uppercase;
   margin: 0 0 1rem 0;
+  letter-spacing: 0.05em;
 }
 
 .simulations-list {
@@ -158,7 +173,7 @@
   justify-content: space-between;
   padding: 0.75rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -167,26 +182,30 @@
 }
 
 .simulation-item:hover {
-  border-color: #667eea;
+  border-color: var(--primary);
   background: #f0f4ff;
 }
 
 .sim-name {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-main);
   margin-bottom: 0.25rem;
+  font-size: 0.9rem;
 }
 
 .sim-character {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 /* Path Simulations List */
 .empty-simulations {
   text-align: center;
   padding: 3rem 1rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border-radius: 6px;
+  border: 1px dashed var(--border);
 }
 
 .path-simulations-list {
@@ -200,14 +219,14 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   transition: all 0.2s;
 }
 
 .path-simulation-item:hover {
-  background: white;
+  border-color: var(--primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -259,7 +278,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #667eea;
+  background: var(--primary);
   color: white;
   border-radius: 50%;
   font-weight: 700;
@@ -328,34 +347,37 @@
 
 .cancel-btn,
 .save-btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .cancel-btn {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border);
 }
 
 .cancel-btn:hover {
-  background: #e5e7eb;
+  background: white;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .save-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary);
   color: white;
+  border: none;
 }
 
 .save-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  opacity: 0.9;
 }
 
 .save-btn:disabled {
@@ -365,10 +387,6 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .path-editor-page {
-    padding: 1rem;
-  }
-
   .path-simulation-item {
     flex-wrap: wrap;
     gap: 0.75rem;
