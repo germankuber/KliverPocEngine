@@ -55,7 +55,10 @@ export const ChatPage = () => {
         .from('chats')
         .select(`
           *,
-          simulations (*)
+          simulations (
+            *,
+            characters(id, name, description)
+          )
         `)
         .eq('id', id)
         .single();
@@ -362,15 +365,18 @@ export const ChatPage = () => {
       // Use global prompt
       let systemMessageContent = globalPrompts?.system_prompt || "You are a helpful assistant.";
 
+      // Get character description from relation or fallback to legacy field
+      const characterDescription = simulationData.characters?.description || simulationData.character || "";
+
       // Replace wildcards if they exist in the prompt
-      systemMessageContent = systemMessageContent.replace(/{{character}}/g, simulationData.character || "")
+      systemMessageContent = systemMessageContent.replace(/{{character}}/g, characterDescription)
         .replace(/{{objective}}/g, simulationData.objective || "")
         .replace(/{{context}}/g, simulationData.context || "")
         .replace(/{{rules}}/g, rules);
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
-      if (!systemMessageContent.includes(simulationData.character) && simulationData.character) {
-        systemMessageContent += `\n\nCharacter: ${simulationData.character}`;
+      if (!systemMessageContent.includes(characterDescription) && characterDescription) {
+        systemMessageContent += `\n\nCharacter: ${characterDescription}`;
       }
       if (!systemMessageContent.includes(simulationData.objective) && simulationData.objective) {
         systemMessageContent += `\n\nObjective: ${simulationData.objective}`;

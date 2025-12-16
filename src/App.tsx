@@ -8,6 +8,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { PathsPage } from './pages/PathsPage';
 import { PathEditorPage } from './pages/PathEditorPage';
 import { PathPlayerPage } from './pages/PathPlayerPage';
+import { CharactersPage } from './pages/CharactersPage';
 import './App.css';
 
 function AppContent() {
@@ -24,6 +25,9 @@ function AppContent() {
           <Route path="/simulations" element={<SimulationPage />} />
           <Route path="/simulations/new" element={<SimulationPage isNew />} />
           <Route path="/simulations/:id" element={<SimulationPage />} />
+          <Route path="/characters" element={<CharactersPage />} />
+          <Route path="/characters/new" element={<CharactersPage isNew />} />
+          <Route path="/characters/:id" element={<CharactersPage />} />
           <Route path="/chat/:id" element={<ChatPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/paths" element={<PathsPage />} />
