@@ -209,9 +209,109 @@
 }
 
 /* Responsive */
+/* Completion Modal */
+.completion-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.completion-modal {
+  background-color: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease-out;
+  text-align: center;
+}
+
+.modal-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: bounce 0.6s ease-in-out;
+}
+
+.modal-icon.completed {
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
+}
+
+.modal-icon.failed {
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));
+}
+
+.completion-modal h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: var(--text-main);
+}
+
+.completion-modal p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+.completion-modal .btn {
+  min-width: 150px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
 @media (max-width: 768px) {
   .rules-sidebar {
     width: 100%;
+  }
+  
+  .completion-modal {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .modal-icon {
+    font-size: 3rem;
+  }
+  
+  .completion-modal h2 {
+    font-size: 1.5rem;
   }
 }
 
@@ -414,6 +514,27 @@
   border-top: 1px solid var(--border);
 }
 
+/* Chat Status Banner */
+.chat-status-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.chat-status-banner.completed {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 2px solid #22c55e;
+}
+
+.chat-status-banner.failed {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 2px solid #ef4444;
+}
+
 .input-form {
   display: flex;
   gap: 1rem;
@@ -445,6 +566,12 @@
 
 .chat-input:focus {
   outline: none;
+}
+
+.chat-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .send-btn {

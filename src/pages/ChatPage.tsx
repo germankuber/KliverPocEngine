@@ -28,6 +28,9 @@ export const ChatPage = () => {
   const [globalPrompts, setGlobalPrompts] = useState<any>(null);
   const [rulesTracker, setRulesTracker] = useState<{[key: string]: boolean}>({});
   const [showRulesSidebar, setShowRulesSidebar] = useState(false);
+  const [chatStatus, setChatStatus] = useState<'active' | 'completed' | 'failed'>('active');
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,6 +61,9 @@ export const ChatPage = () => {
         .single();
 
       if (chatError) throw chatError;
+
+      // Set chat status
+      setChatStatus(chatData.status || 'active');
 
       // Set messages from chat history
       if (chatData.messages && Array.isArray(chatData.messages)) {
@@ -160,6 +166,28 @@ export const ChatPage = () => {
     }
   };
 
+  const updateChatStatus = async (status: 'active' | 'completed' | 'failed') => {
+    if (!chatId) return;
+    try {
+      await supabase
+        .from('chats')
+        .update({ status })
+        .eq('id', chatId);
+      setChatStatus(status);
+    } catch (error) {
+      console.error("Error updating chat status:", error);
+    }
+  };
+
+  const checkAllRulesCompleted = () => {
+    if (!simulationData?.rules || simulationData.rules.length === 0) return false;
+    
+    const totalRules = Object.keys(rulesTracker).length;
+    const completedRules = Object.values(rulesTracker).filter(Boolean).length;
+    
+    return totalRules > 0 && completedRules === totalRules;
+  };
+
   const evaluateRules = async (response: string, simData: any, evaluationPrompt: string) => {
     try {
       console.log("🔍 Evaluating rules for response...");
@@ -257,6 +285,11 @@ export const ChatPage = () => {
     e?.preventDefault();
     if (!input.trim() || isLoading || !simulationData) return;
 
+    // Prevent sending if chat is completed or failed
+    if (chatStatus !== 'active') {
+      return;
+    }
+
     if (!appSettings?.api_key) {
       alert("API Key is missing in Global Settings. Please configure it.");
       return;
@@ -280,16 +313,21 @@ export const ChatPage = () => {
     const maxInteractions = simulationData.max_interactions || 10;
 
     if (assistantMessagesCount >= maxInteractions) {
-      setTimeout(() => {
+      setTimeout(async () => {
         const limitMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: "❌ **Simulation Failed:** Maximum interaction limit reached.",
+          content: "❌ **Simulation Failed:** Maximum interaction limit reached without completing all objectives.",
           timestamp: new Date()
         };
         const finalMessages = [...updatedMessages, limitMessage];
         setMessages(finalMessages);
         saveMessages(finalMessages);
+        
+        // Mark as failed
+        await updateChatStatus('failed');
+        setCompletionMessage('❌ Simulation Failed: You reached the maximum number of interactions without completing all objectives.');
+        setShowCompletionModal(true);
         setIsLoading(false);
       }, 500);
       return;
@@ -390,6 +428,15 @@ export const ChatPage = () => {
       const finalMessages = [...updatedMessages, finalBotMessage];
       setMessages(finalMessages);
       saveMessages(finalMessages);
+
+      // Check if all rules are completed after a short delay to allow state update
+      setTimeout(() => {
+        if (checkAllRulesCompleted()) {
+          updateChatStatus('completed');
+          setCompletionMessage('🎉 ¡Felicitaciones! Has completado exitosamente todas las objetivos de la simulación.');
+          setShowCompletionModal(true);
+        }
+      }, 500);
 
     } catch (error) {
       console.error("Chat error:", error);
@@ -547,21 +594,34 @@ export const ChatPage = () => {
         </div>
 
         <div className="input-area">
+          {chatStatus !== 'active' && (
+            <div className={`chat-status-banner ${chatStatus}`}>
+              {chatStatus === 'completed' ? (
+                <>
+                  🎉 <strong>Simulation Completed!</strong> All objectives achieved.
+                </>
+              ) : (
+                <>
+                  ❌ <strong>Simulation Failed!</strong> Maximum interactions reached.
+                </>
+              )}
+            </div>
+          )}
           <form onSubmit={handleSendMessage} className="input-form">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message here..."
+              placeholder={chatStatus !== 'active' ? 'Simulation ended - no more messages allowed' : 'Type your message here...'}
               rows={1}
               className="chat-input"
-              disabled={isLoading}
+              disabled={isLoading || chatStatus !== 'active'}
             />
             <button
               type="submit"
-              className={`send-btn ${!input.trim() || isLoading ? 'disabled' : ''}`}
-              disabled={!input.trim() || isLoading}
+              className={`send-btn ${!input.trim() || isLoading || chatStatus !== 'active' ? 'disabled' : ''}`}
+              disabled={!input.trim() || isLoading || chatStatus !== 'active'}
             >
               {isLoading ? <StopCircle size={20} /> : <Send size={20} />}
             </button>
@@ -572,6 +632,25 @@ export const ChatPage = () => {
             </div>
           )}
         </div>
+
+        {/* Completion Modal */}
+        {showCompletionModal && (
+          <div className="completion-modal-overlay" onClick={() => setShowCompletionModal(false)}>
+            <div className="completion-modal" onClick={(e) => e.stopPropagation()}>
+              <div className={`modal-icon ${chatStatus}`}>
+                {chatStatus === 'completed' ? '🎉' : '❌'}
+              </div>
+              <h2>{chatStatus === 'completed' ? '¡Felicitaciones!' : 'Simulación Fallida'}</h2>
+              <p>{completionMessage}</p>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowCompletionModal(false)}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
