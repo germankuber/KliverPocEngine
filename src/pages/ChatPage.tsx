@@ -370,29 +370,27 @@ export const ChatPage = () => {
       if (!promptsError && promptsData) {
         setGlobalPrompts(promptsData);
         
-        // Configure LangSmith - prioritize env vars, fallback to UI config
-        const langsmithEnabled = import.meta.env.VITE_LANGCHAIN_TRACING_V2 === 'true' || promptsData.langsmith_enabled;
-        const langsmithKey = import.meta.env.VITE_LANGCHAIN_API_KEY || promptsData.langsmith_api_key;
-        const langsmithProject = import.meta.env.VITE_LANGCHAIN_PROJECT || promptsData.langsmith_project || 'default';
-        
-        if (langsmithEnabled && langsmithKey) {
+        // Configure LangSmith - set as environment variables if enabled
+        if (promptsData.langsmith_enabled && promptsData.langsmith_api_key) {
           try {
-            // Set global config for LangChain
-            (window as any).LANGCHAIN_TRACING_V2 = 'true';
-            (window as any).LANGCHAIN_API_KEY = langsmithKey;
-            (window as any).LANGCHAIN_PROJECT = langsmithProject;
-            (window as any).LANGCHAIN_ENDPOINT = import.meta.env.VITE_LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com';
+            // Set process.env for LangChain
+            if (typeof process !== 'undefined' && process.env) {
+              process.env.LANGCHAIN_TRACING_V2 = 'true';
+              process.env.LANGCHAIN_API_KEY = promptsData.langsmith_api_key;
+              process.env.LANGCHAIN_PROJECT = promptsData.langsmith_project || 'default';
+              process.env.LANGCHAIN_ENDPOINT = 'https://api.smith.langchain.com';
+            }
             
-            console.log('✅ LangSmith tracing enabled:', {
-              project: langsmithProject,
-              source: import.meta.env.VITE_LANGCHAIN_API_KEY ? 'environment' : 'UI config',
-              endpoint: (window as any).LANGCHAIN_ENDPOINT
+            console.log('✅ LangSmith tracing configured:', {
+              project: promptsData.langsmith_project || 'default',
+              hasKey: !!promptsData.langsmith_api_key,
+              endpoint: 'https://api.smith.langchain.com'
             });
           } catch (langsmithError) {
-            console.error('Error configuring LangSmith:', langsmithError);
+            console.error('❌ Error configuring LangSmith:', langsmithError);
           }
         } else if (promptsData.langsmith_enabled && !promptsData.langsmith_api_key) {
-          console.warn('⚠️ LangSmith enabled but no API key provided. Add key in Settings or use environment variables.');
+          console.warn('⚠️ LangSmith enabled but no API key provided. Add key in Settings.');
         }
       } else {
         console.error("Error loading global prompts:", promptsError);
@@ -508,23 +506,14 @@ export const ChatPage = () => {
       // Create evaluation chat instance
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
       
-      // Configure LangSmith for evaluation
-      const evalLangsmithConfig = globalPrompts?.langsmith_enabled && globalPrompts?.langsmith_api_key ? {
-        metadata: {
-          langsmith_project: globalPrompts.langsmith_project || 'default',
-          type: 'evaluation'
-        },
-        tags: ['evaluation', 'rules', simulationData?.name || 'unnamed']
-      } : {};
-      
+      // Configure LangSmith for evaluation  
       const evaluationChat = new ChatOpenAI({
         apiKey: appSettings.api_key?.trim(),
         openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0 }),
         // @ts-ignore
-        dangerouslyAllowBrowser: true,
-        ...evalLangsmithConfig
+        dangerouslyAllowBrowser: true
       });
 
       // Call the model with evaluation prompt
@@ -653,13 +642,16 @@ export const ChatPage = () => {
       // GPT-5 models (reasoning models) do not support temperature parameter
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
 
-      // Configure LangSmith options
-      const langsmithConfig = globalPrompts?.langsmith_enabled && globalPrompts?.langsmith_api_key ? {
-        metadata: {
-          langsmith_project: globalPrompts.langsmith_project || 'default',
-        },
-        tags: ['chat', 'simulation', simulationData?.name || 'unnamed']
-      } : {};
+      // Configure LangSmith options - Using callbacks with metadata
+      if (globalPrompts?.langsmith_enabled && globalPrompts?.langsmith_api_key) {
+        try {
+          console.log('⚠️ LangSmith enabled but browser tracing has limitations');
+          console.log('📝 Use environment variables for full tracing support');
+          console.log('See LANGSMITH_BROWSER_LIMITATION.md for details');
+        } catch (error) {
+          console.error('❌ Error configuring LangSmith:', error);
+        }
+      }
 
       const chat = new ChatOpenAI({
         apiKey: appSettings.api_key?.trim(),
@@ -667,8 +659,7 @@ export const ChatPage = () => {
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0.7 }),
         // @ts-ignore
-        dangerouslyAllowBrowser: true,
-        ...langsmithConfig
+        dangerouslyAllowBrowser: true
       });
 
       const rules = simulationData.rules && Array.isArray(simulationData.rules)
