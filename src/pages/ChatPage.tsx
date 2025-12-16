@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX } from 'lucide-react';
+import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
@@ -33,9 +33,12 @@ export const ChatPage = () => {
   const [completionMessage, setCompletionMessage] = useState('');
   const [isPathMode, setIsPathMode] = useState(false);
   const [pathId, setPathId] = useState<string | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true); // Activado por defecto
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -72,7 +75,7 @@ export const ChatPage = () => {
           voice: 'alloy',
           speed: 1.0,
           response_format: 'mp3',
-          instructions: 'Speak in a clear, friendly, and engaging tone.'
+          instructions: 'you are extremely angry'
         }),
       });
 
@@ -195,6 +198,80 @@ export const ChatPage = () => {
       currentAudio.pause();
       currentAudio.currentTime = 0;
       setIsSpeaking(false);
+    }
+  };
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.lang = 'es-ES'; // Cambia a 'en-US' para inglés
+      
+      recognitionInstance.onstart = () => {
+        console.log('🎤 Speech recognition started');
+        setIsListening(true);
+      };
+      
+      recognitionInstance.onresult = (event: any) => {
+        let interim = '';
+        let final = '';
+        
+        // Process ALL results, not just from resultIndex
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript + ' ';
+          } else {
+            interim += transcript;
+          }
+        }
+        
+        console.log('🎤 Interim:', interim, '| Final:', final);
+        
+        // Update interim transcript for real-time display
+        setInterimTranscript(interim);
+        
+        // Update input with final transcript only when confirmed
+        if (final) {
+          setInput(prev => prev + final);
+          setInterimTranscript(''); // Clear interim when we have final
+        }
+      };
+      
+      recognitionInstance.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+      
+      recognitionInstance.onend = () => {
+        console.log('🎤 Speech recognition ended');
+        setIsListening(false);
+        setInterimTranscript('');
+      };
+      
+      setRecognition(recognitionInstance);
+    } else {
+      console.warn('Speech recognition not supported in this browser');
+    }
+  }, []);
+
+  const toggleSpeechRecognition = () => {
+    if (!recognition) {
+      alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+      setInterimTranscript('');
+    } else {
+      recognition.start();
+      setIsListening(true);
     }
   };
 
@@ -879,14 +956,29 @@ export const ChatPage = () => {
           <form onSubmit={handleSendMessage} className="input-form">
             <textarea
               ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              value={input + interimTranscript}
+              onChange={(e) => {
+                // Allow typing when not listening
+                if (!isListening) {
+                  setInput(e.target.value);
+                }
+              }}
               onKeyDown={handleKeyDown}
-              placeholder={chatStatus !== 'active' ? 'Simulation ended - no more messages allowed' : 'Type your message here...'}
+              placeholder={chatStatus !== 'active' ? 'Simulation ended - no more messages allowed' : isListening ? '🎤 Escuchando...' : 'Type your message here...'}
               rows={1}
-              className="chat-input"
+              className={`chat-input ${isListening ? 'listening' : ''}`}
               disabled={isLoading || chatStatus !== 'active'}
+              readOnly={isListening}
             />
+            <button
+              type="button"
+              className={`mic-btn ${isListening ? 'active' : ''}`}
+              onClick={toggleSpeechRecognition}
+              disabled={isLoading || chatStatus !== 'active'}
+              title={isListening ? 'Stop recording' : 'Start voice input'}
+            >
+              {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+            </button>
             <button
               type="submit"
               className={`send-btn ${!input.trim() || isLoading || chatStatus !== 'active' ? 'disabled' : ''}`}
