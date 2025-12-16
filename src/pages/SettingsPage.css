@@ -26,6 +26,47 @@
   margin: 0;
 }
 
+/* Global Prompts Section */
+.global-prompts-section {
+  background-color: var(--bg-card);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.global-prompts-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-main);
+}
+
+.section-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem 0;
+}
+
+.prompts-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* AI Settings Section */
+.ai-settings-section {
+  margin-top: 2rem;
+}
+
+.ai-settings-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-main);
+}
+
 .mb-4 {
   margin-bottom: 1rem;
 }

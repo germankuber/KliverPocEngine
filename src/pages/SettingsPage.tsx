@@ -21,14 +21,22 @@ type Setting = {
   created_at: string;
 };
 
+type GlobalPrompts = {
+  id: string;
+  system_prompt: string;
+  evaluation_rule_prompt: string;
+};
+
 export const SettingsPage = () => {
   const [settings, setSettings] = useState<Setting[]>([]);
+  const [globalPrompts, setGlobalPrompts] = useState<GlobalPrompts | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [settingToDelete, setSettingToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingPrompts, setIsSavingPrompts] = useState(false);
 
   const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<SettingInputs>({
     defaultValues: {
@@ -40,6 +48,7 @@ export const SettingsPage = () => {
 
   useEffect(() => {
     fetchSettings();
+    fetchGlobalPrompts();
   }, []);
 
   const fetchSettings = async () => {
@@ -57,6 +66,46 @@ export const SettingsPage = () => {
       toast.error("Error loading settings");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchGlobalPrompts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('global_prompts')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      setGlobalPrompts(data);
+    } catch (error) {
+      console.error("Error fetching global prompts:", error);
+      toast.error("Error loading global prompts");
+    }
+  };
+
+  const handleSavePrompts = async () => {
+    if (!globalPrompts) return;
+    
+    setIsSavingPrompts(true);
+    try {
+      const { error } = await supabase
+        .from('global_prompts')
+        .update({
+          system_prompt: globalPrompts.system_prompt,
+          evaluation_rule_prompt: globalPrompts.evaluation_rule_prompt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', globalPrompts.id);
+
+      if (error) throw error;
+      toast.success("Global prompts saved successfully");
+    } catch (error) {
+      console.error("Error saving global prompts:", error);
+      toast.error("Error saving global prompts");
+    } finally {
+      setIsSavingPrompts(false);
     }
   };
 
@@ -175,9 +224,60 @@ export const SettingsPage = () => {
       />
 
       <div className="settings-header">
-        <h1>AI Settings</h1>
-        <p>Manage multiple API configurations for your simulations.</p>
+        <h1>Settings</h1>
+        <p>Manage global prompts and API configurations for your simulations.</p>
       </div>
+
+      {/* Global Prompts Section */}
+      <div className="global-prompts-section">
+        <h2>Global Prompts</h2>
+        <p className="section-description">These prompts are used across all simulations in the application.</p>
+        
+        {globalPrompts ? (
+          <div className="prompts-form">
+            <div className="form-group">
+              <label htmlFor="systemPrompt">System Prompt</label>
+              <p className="form-helper-text">Core instructions that define how the AI should behave across all simulations.</p>
+              <textarea 
+                id="systemPrompt" 
+                rows={4}
+                value={globalPrompts.system_prompt}
+                onChange={(e) => setGlobalPrompts({...globalPrompts, system_prompt: e.target.value})}
+                className="form-textarea"
+                placeholder="e.g., You are a helpful assistant that provides accurate and concise information..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="evaluationPrompt">Evaluation Rule Prompt</label>
+              <p className="form-helper-text">Rules and criteria for evaluating AI performance and responses.</p>
+              <textarea 
+                id="evaluationPrompt" 
+                rows={4}
+                value={globalPrompts.evaluation_rule_prompt}
+                onChange={(e) => setGlobalPrompts({...globalPrompts, evaluation_rule_prompt: e.target.value})}
+                className="form-textarea"
+                placeholder="e.g., Evaluate if the response follows the defined rules and answers appropriately..."
+              />
+            </div>
+
+            <button 
+              onClick={handleSavePrompts}
+              className="btn btn-primary"
+              disabled={isSavingPrompts}
+            >
+              <Save size={20} /> {isSavingPrompts ? 'Saving...' : 'Save Global Prompts'}
+            </button>
+          </div>
+        ) : (
+          <LoadingSpinner message="Loading global prompts..." />
+        )}
+      </div>
+
+      {/* AI Settings Section */}
+      <div className="ai-settings-section">
+        <h2>AI Settings</h2>
+        <p className="section-description">Manage multiple API configurations.</p>
 
       {!showCreateForm ? (
         <button 
@@ -295,6 +395,7 @@ export const SettingsPage = () => {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, StopCircle } from 'lucide-react';
+import { Send, Bot, User, StopCircle, ListChecks, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
@@ -12,6 +12,8 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  evaluationResult?: string;
+  matchedRules?: string[];
 };
 
 export const ChatPage = () => {
@@ -23,6 +25,9 @@ export const ChatPage = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [simulationData, setSimulationData] = useState<any>(null);
   const [appSettings, setAppSettings] = useState<any>(null);
+  const [globalPrompts, setGlobalPrompts] = useState<any>(null);
+  const [rulesTracker, setRulesTracker] = useState<{[key: string]: boolean}>({});
+  const [showRulesSidebar, setShowRulesSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,6 +74,15 @@ export const ChatPage = () => {
       const simData = chatData.simulations;
       setSimulationData(simData);
 
+      // Initialize rules tracker
+      if (simData.rules && Array.isArray(simData.rules)) {
+        const initialTracker: {[key: string]: boolean} = {};
+        simData.rules.forEach((_: any, index: number) => {
+          initialTracker[`rule_${index + 1}`] = false;
+        });
+        setRulesTracker(initialTracker);
+      }
+
       // Load the AI setting associated with this simulation
       if (simData.setting_id) {
         const { data: settingData, error: settingError } = await supabase
@@ -85,6 +99,19 @@ export const ChatPage = () => {
         }
       } else {
         alert("This simulation doesn't have an AI setting assigned. Please edit the simulation to assign one.");
+      }
+
+      // Load global prompts
+      const { data: promptsData, error: promptsError } = await supabase
+        .from('global_prompts')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (!promptsError && promptsData) {
+        setGlobalPrompts(promptsData);
+      } else {
+        console.error("Error loading global prompts:", promptsError);
       }
 
     } catch (error: any) {
@@ -105,6 +132,88 @@ export const ChatPage = () => {
         .eq('id', chatId);
     } catch (error) {
       console.error("Error saving messages:", error);
+    }
+  };
+
+  const evaluateRules = async (response: string, simData: any, evaluationPrompt: string) => {
+    try {
+      console.log("🔍 Evaluating rules for response...");
+
+      if (!appSettings?.api_key) {
+        console.error("API Key is missing for rule evaluation");
+        return;
+      }
+
+      // Prepare rules data for evaluation
+      const rulesForEvaluation = simData.rules.map((rule: any, index: number) => ({
+        id: `rule_${index + 1}`,
+        question: rule.question,
+        answer: rule.answer
+      }));
+
+      // Create the evaluation payload
+      const evaluationPayload = {
+        response: response,
+        rules: rulesForEvaluation.map((r: any) => ({
+          id: r.id,
+          answer: r.answer
+        }))
+      };
+
+      // Create evaluation chat instance
+      const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
+      const evaluationChat = new ChatOpenAI({
+        apiKey: appSettings.api_key?.trim(),
+        openAIApiKey: appSettings.api_key?.trim(),
+        modelName: appSettings.model || "gpt-3.5-turbo",
+        ...(isReasoningModel ? {} : { temperature: 0 }),
+        // @ts-ignore
+        dangerouslyAllowBrowser: true
+      });
+
+      // Call the model with evaluation prompt
+      const evaluationMessages = [
+        new SystemMessage(evaluationPrompt),
+        new HumanMessage(JSON.stringify(evaluationPayload, null, 2))
+      ];
+
+      const evaluationResponse = await evaluationChat.invoke(evaluationMessages);
+      const evaluationResult = evaluationResponse.content as string;
+
+      console.log("📊 Evaluation Result:", evaluationResult);
+
+      // Parse the evaluation result to extract matched rule IDs
+      const ruleIdMatch = evaluationResult.match(/RULE_ID:\s*(.+)/);
+      if (ruleIdMatch) {
+        const matchedRulesStr = ruleIdMatch[1].trim();
+        console.log("✅ Matched Rules:", matchedRulesStr);
+
+        let matchedRules: string[] = [];
+        if (matchedRulesStr !== "NO_RULE_MATCHED") {
+          matchedRules = matchedRulesStr.split(',').map(r => r.trim());
+          console.log("✅ Rules matched:", matchedRules);
+          
+          // Update rules tracker
+          setRulesTracker(prev => {
+            const updated = { ...prev };
+            matchedRules.forEach(ruleId => {
+              updated[ruleId] = true;
+            });
+            return updated;
+          });
+        } else {
+          console.log("⚠️ No rules were matched");
+        }
+
+        return {
+          evaluationResult: evaluationResult,
+          matchedRules: matchedRules
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error evaluating rules:", error);
     }
   };
 
@@ -167,7 +276,8 @@ export const ChatPage = () => {
         ? simulationData.rules.map((r: any) => `- "${r.question}" → "${r.answer}"`).join("\n")
         : "";
 
-      let systemMessageContent = simulationData.system_prompt || "";
+      // Use global prompt
+      let systemMessageContent = globalPrompts?.system_prompt || "You are a helpful assistant.";
 
       // Replace wildcards if they exist in the prompt
       systemMessageContent = systemMessageContent.replace(/{{character}}/g, simulationData.character || "")
@@ -221,8 +331,17 @@ export const ChatPage = () => {
         }
       }
 
-      // Once complete, update the message with full content and save
-      const finalBotMessage = { ...botMessage, content: fullContent };
+      // Once complete, update the message with full content
+      let finalBotMessage = { ...botMessage, content: fullContent };
+
+      // Evaluate rules if evaluation_rule_prompt is defined
+      if (globalPrompts?.evaluation_rule_prompt && simulationData.rules && simulationData.rules.length > 0) {
+        const evaluationResult = await evaluateRules(fullContent, simulationData, globalPrompts.evaluation_rule_prompt);
+        if (evaluationResult) {
+          finalBotMessage = { ...finalBotMessage, ...evaluationResult };
+        }
+      }
+
       const finalMessages = [...updatedMessages, finalBotMessage];
       setMessages(finalMessages);
       saveMessages(finalMessages);
@@ -266,7 +385,58 @@ export const ChatPage = () => {
           <h1><Bot className="text-primary" /> {simulationData?.name || "Simulation"}</h1>
           <p>Character: {simulationData?.character}</p>
         </div>
+        {simulationData?.rules && simulationData.rules.length > 0 && (
+          <button 
+            className="rules-toggle-btn"
+            onClick={() => setShowRulesSidebar(!showRulesSidebar)}
+            title="Toggle rules progress"
+          >
+            <ListChecks size={20} />
+            <span className="rules-count-badge">
+              {Object.values(rulesTracker).filter(Boolean).length}/{Object.keys(rulesTracker).length}
+            </span>
+          </button>
+        )}
       </div>
+
+      {/* Rules Sidebar */}
+      {simulationData?.rules && simulationData.rules.length > 0 && (
+        <>
+          <div 
+            className={`rules-sidebar-overlay ${showRulesSidebar ? 'show' : ''}`}
+            onClick={() => setShowRulesSidebar(false)}
+          />
+          <div className={`rules-sidebar ${showRulesSidebar ? 'open' : ''}`}>
+            <div className="rules-sidebar-header">
+              <h3>Rules Progress</h3>
+              <button 
+                className="rules-close-btn"
+                onClick={() => setShowRulesSidebar(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="rules-list-tracker">
+              {simulationData.rules.map((rule: any, index: number) => {
+                const ruleId = `rule_${index + 1}`;
+                const isMatched = rulesTracker[ruleId];
+                return (
+                  <div key={ruleId} className={`rule-item-tracker ${isMatched ? 'matched' : 'pending'}`}>
+                    <span className="rule-icon">{isMatched ? '✅' : '⏳'}</span>
+                    <div className="rule-info">
+                      <span className="rule-id">{ruleId}</span>
+                      <span className="rule-question">{rule.question}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="rules-summary">
+              {Object.values(rulesTracker).filter(Boolean).length} / {Object.keys(rulesTracker).length} rules matched
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="chat-container">
         <div className="messages-area">
@@ -279,19 +449,44 @@ export const ChatPage = () => {
               <p>Chatting with <strong>{simulationData?.character}</strong></p>
             </div>
           ) : (
-            messages.map((msg) => (
-              <div key={msg.id} className={`message-wrapper ${msg.role}`}>
-                <div className="message-avatar">
-                  {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
-                </div>
-                <div className="message-bubble">
-                  <div className="message-content">{msg.content}</div>
-                  <div className="message-time">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            messages.map((msg) => {
+              const hasMatchedRules = msg.role === 'assistant' && msg.matchedRules && msg.matchedRules.length > 0;
+              return (
+                <div key={msg.id} className={`message-wrapper ${msg.role} ${hasMatchedRules ? 'has-matched-rules' : ''}`}>
+                  <div className="message-avatar">
+                    {msg.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
+                  </div>
+                  <div className="message-bubble">
+                    <div className="message-content">
+                      {msg.content}
+                      {hasMatchedRules && (
+                        <span className="rule-badge" title={`Matched rules: ${msg.matchedRules!.join(', ')}`}>
+                          ✓ {msg.matchedRules!.length}
+                        </span>
+                      )}
+                    </div>
+                    {msg.role === 'assistant' && msg.matchedRules !== undefined && (
+                      <div className="rules-evaluation-compact">
+                        {msg.matchedRules.length > 0 ? (
+                          <div className="rules-matched-compact">
+                            <span className="rules-icon">✅</span>
+                            <span className="rules-text">{msg.matchedRules.join(', ')}</span>
+                          </div>
+                        ) : (
+                          <div className="rules-not-matched-compact">
+                            <span className="rules-icon">⚠️</span>
+                            <span className="rules-text">No rules matched</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="message-time">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           {isLoading && messages.length > 0 && messages[messages.length - 1].role !== 'assistant' && (
             <div className="message-wrapper assistant">
