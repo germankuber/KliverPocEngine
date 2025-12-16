@@ -31,6 +31,9 @@ export const ChatPage = () => {
   const [chatStatus, setChatStatus] = useState<'active' | 'completed' | 'failed'>('active');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionMessage, setCompletionMessage] = useState('');
+  const [isPathMode, setIsPathMode] = useState(false);
+  const [pathId, setPathId] = useState<string | null>(null);
+  const [pathSimId, setPathSimId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,6 +47,17 @@ export const ChatPage = () => {
 
   useEffect(() => {
     if (chatId) {
+      // Check if we're in path mode
+      const params = new URLSearchParams(window.location.search);
+      const pathIdParam = params.get('pathId');
+      const pathSimIdParam = params.get('pathSimId');
+      
+      if (pathIdParam && pathSimIdParam) {
+        setIsPathMode(true);
+        setPathId(pathIdParam);
+        setPathSimId(pathSimIdParam);
+      }
+      
       loadData(chatId);
     }
   }, [chatId]);
@@ -650,9 +664,15 @@ export const ChatPage = () => {
               <p>{completionMessage}</p>
               <button 
                 className="btn btn-primary"
-                onClick={() => setShowCompletionModal(false)}
+                onClick={() => {
+                  setShowCompletionModal(false);
+                  // If in path mode, redirect to path page
+                  if (isPathMode && pathId) {
+                    window.location.href = `/play/${pathId}`;
+                  }
+                }}
               >
-                Entendido
+                {isPathMode ? 'Volver al Path' : 'Entendido'}
               </button>
             </div>
           </div>
