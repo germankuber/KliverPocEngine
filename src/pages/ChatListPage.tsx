@@ -115,15 +115,9 @@ export const ChatListPage = () => {
                   {new Date(chat.created_at).toLocaleDateString()}
                 </span>
                 <div className="chat-footer-actions">
-                  <button 
-                    className="btn btn-primary btn-sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
+                  <div className="btn btn-primary btn-sm">
                     <ArrowRight size={16} /> Continue
-                  </button>
+                  </div>
                   <button 
                     className="btn btn-danger btn-sm btn-icon-only"
                     onClick={(e) => handleDeleteClick(e, chat.id)}
