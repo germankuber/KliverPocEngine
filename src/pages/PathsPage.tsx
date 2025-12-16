@@ -85,78 +85,73 @@ export const PathsPage = () => {
   return (
     <div className="paths-page">
       <div className="paths-header">
-        <div className="header-content">
-          <h1>Learning Paths</h1>
-          <p>Create and manage learning paths with multiple simulations</p>
-        </div>
-        <button onClick={() => navigate('/paths/new')} className="create-path-btn">
-          <Plus size={20} />
+        <h1>Learning Paths</h1>
+        <p>Create and manage learning paths with multiple simulations</p>
+      </div>
+
+      <div className="flex justify-between items-center mb-4">
+        <button onClick={() => navigate('/paths/new')} className="btn btn-primary">
+          <Plus size={18} />
           Create Path
         </button>
       </div>
 
-      {paths.length === 0 ? (
-        <div className="empty-state">
-          <FolderOpen size={64} />
-          <h2>No paths yet</h2>
-          <p>Create your first learning path to group simulations</p>
-          <button onClick={() => navigate('/paths/new')} className="create-path-btn">
-            <Plus size={20} />
-            Create Path
-          </button>
-        </div>
+      {isLoading ? (
+        <LoadingSpinner message="Loading paths..." />
+      ) : paths.length === 0 ? (
+        <p className="empty-text">No paths created yet. Create your first path to group simulations.</p>
       ) : (
-        <div className="paths-grid">
+        <div className="simulations-grid">
           {paths.map(path => (
-            <div key={path.id} className="path-card">
-              <div className="path-card-header">
+            <div key={path.id} className="simulation-card">
+              <div className="sim-card-header">
                 <h3>{path.name}</h3>
-                <div className="path-actions">
+                {path.is_public && (
+                  <span className="sim-model-badge">Public</span>
+                )}
+              </div>
+
+              <div className="sim-card-body">
+                {path.description && (
+                  <p className="path-description">{path.description}</p>
+                )}
+                <p>
+                  <strong>Simulations:</strong>
+                  <span>{path.path_simulations?.length || 0}</span>
+                </p>
+              </div>
+
+              <div className="sim-card-footer">
+                <span className="sim-date">
+                  {new Date(path.created_at).toLocaleDateString()}
+                </span>
+                <div className="sim-actions">
+                  <Link to={`/play/${path.id}`} className="btn btn-primary btn-sm">
+                    <ExternalLink size={16} />
+                    Preview
+                  </Link>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/paths/${path.id}/edit`);
-                    }}
-                    className="action-btn edit-btn"
-                    title="Edit"
+                    onClick={() => navigate(`/paths/${path.id}/edit`)}
+                    className="btn btn-secondary btn-sm"
                   >
-                    <Edit size={18} />
+                    <Edit size={16} />
+                    Edit
                   </button>
                   <button
                     onClick={(e) => copyPublicLink(path.id, e)}
-                    className="action-btn link-btn"
+                    className="btn btn-secondary btn-sm"
                     title="Copy public link"
                   >
-                    <ExternalLink size={18} />
+                    <ExternalLink size={16} />
                   </button>
                   <button
                     onClick={(e) => handleDelete(path.id, e)}
-                    className="action-btn delete-btn"
+                    className="btn btn-danger btn-sm btn-icon-only"
                     title="Delete"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
-              </div>
-
-              {path.description && (
-                <p className="path-description">{path.description}</p>
-              )}
-
-              <div className="path-meta">
-                <span className="simulations-count">
-                  {path.path_simulations?.length || 0} simulations
-                </span>
-                <span className="path-date">
-                  <Calendar size={14} />
-                  {new Date(path.created_at).toLocaleDateString()}
-                </span>
-              </div>
-
-              <div className="path-footer">
-                <Link to={`/play/${path.id}`} className="preview-btn">
-                  Preview Path
-                </Link>
               </div>
             </div>
           ))}
