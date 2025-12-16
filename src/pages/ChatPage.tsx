@@ -58,6 +58,8 @@ export const ChatPage = () => {
         currentAudio.currentTime = 0;
       }
 
+      console.log('🎤 Starting streaming text-to-speech...');
+
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -67,10 +69,10 @@ export const ChatPage = () => {
         body: JSON.stringify({
           model: 'gpt-4o-mini-tts',
           input: text,
-          voice: 'alloy', // Options: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse
+          voice: 'alloy',
           speed: 1.0,
           response_format: 'mp3',
-          instructions: 'Speak very angry'
+          instructions: 'Speak in a clear, friendly, and engaging tone.'
         }),
       });
 
@@ -80,26 +82,108 @@ export const ChatPage = () => {
         throw new Error(`TTS API error: ${response.status}`);
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      
-      setCurrentAudio(audio);
+      // Stream the audio as it arrives
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No reader available');
+      }
 
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        console.log('✅ Audio playback finished');
-      };
+      const chunks: Uint8Array[] = [];
+      let audioStarted = false;
+      let mediaSource: MediaSource | null = null;
+      let sourceBuffer: SourceBuffer | null = null;
 
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
-        console.error('❌ Error playing audio');
-      };
+      // Use MediaSource API for streaming playback
+      if ('MediaSource' in window) {
+        mediaSource = new MediaSource();
+        const audioUrl = URL.createObjectURL(mediaSource);
+        const audio = new Audio(audioUrl);
+        setCurrentAudio(audio);
 
-      console.log('🎤 Playing text-to-speech...');
-      await audio.play();
+        mediaSource.addEventListener('sourceopen', async () => {
+          try {
+            sourceBuffer = mediaSource!.addSourceBuffer('audio/mpeg');
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) {
+                if (mediaSource?.readyState === 'open') {
+                  mediaSource.endOfStream();
+                }
+                console.log('✅ Audio streaming complete');
+                break;
+              }
+
+              if (value && sourceBuffer) {
+                chunks.push(value);
+                
+                // Wait if buffer is updating
+                if (!sourceBuffer.updating) {
+                  sourceBuffer.appendBuffer(value);
+                  
+                  // Start playing after first chunk
+                  if (!audioStarted && audio.readyState >= 2) {
+                    audioStarted = true;
+                    console.log('▶️ Starting audio playback...');
+                    audio.play().catch(err => {
+                      console.error('Error starting playback:', err);
+                      setIsSpeaking(false);
+                    });
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Error in sourceBuffer:', err);
+            // Fallback to full audio
+            const fullBlob = new Blob(chunks, { type: 'audio/mpeg' });
+            const fallbackUrl = URL.createObjectURL(fullBlob);
+            audio.src = fallbackUrl;
+            audio.play();
+          }
+        });
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          console.log('✅ Audio playback finished');
+        };
+
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          console.error('❌ Error playing audio');
+        };
+
+      } else {
+        // Fallback: Load all chunks then play
+        console.log('MediaSource not supported, using fallback...');
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(value);
+        }
+        
+        const audioBlob = new Blob(chunks, { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        setCurrentAudio(audio);
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        await audio.play();
+      }
+
     } catch (error) {
       console.error('Error in text-to-speech:', error);
       setIsSpeaking(false);
