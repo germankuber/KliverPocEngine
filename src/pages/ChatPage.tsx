@@ -257,6 +257,7 @@ export const ChatPage = () => {
     } else {
       console.warn('Speech recognition not supported in this browser');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleSpeechRecognition = () => {
