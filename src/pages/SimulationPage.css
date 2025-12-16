@@ -367,17 +367,36 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .sim-actions .btn {
-  flex: 1;
-  min-width: 70px;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.sim-actions .btn-icon-only {
+  padding: 0.4rem 0.6rem;
 }
 
 .sim-actions a {
   text-decoration: none;
-  flex: 1;
-  min-width: 70px;
+  flex: 0 1 auto;
+}
+
+@media (max-width: 767px) {
+  .sim-actions {
+    width: 100%;
+  }
+  
+  .sim-actions .btn {
+    flex: 1 1 auto;
+  }
+  
+  .sim-actions .btn-icon-only {
+    flex: 0 1 auto;
+    min-width: 42px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -385,12 +404,6 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-  }
-  
-  .sim-actions .btn,
-  .sim-actions a {
-    flex: 0;
-    min-width: auto;
   }
 }
 
@@ -414,4 +427,19 @@
 
 .loading-text {
   color: var(--text-secondary);
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

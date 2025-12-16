@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, StopCircle } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
 import { supabase } from '../lib/supabase';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import './ChatPage.css';
 
 type Message = {
@@ -14,10 +15,12 @@ type Message = {
 };
 
 export const ChatPage = () => {
-  const { id: simulationId } = useParams();
+  const { id: chatId } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [simulationData, setSimulationData] = useState<any>(null);
   const [appSettings, setAppSettings] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,21 +35,38 @@ export const ChatPage = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (simulationId) {
-      loadData(simulationId);
+    if (chatId) {
+      loadData(chatId);
     }
-  }, [simulationId]);
+  }, [chatId]);
 
   const loadData = async (id: string) => {
+    setIsInitialLoading(true);
     try {
-      const { data: simData, error: simError } = await supabase
-        .from('simulations')
-        .select('*')
+      const { data: chatData, error: chatError } = await supabase
+        .from('chats')
+        .select(`
+          *,
+          simulations (*)
+        `)
         .eq('id', id)
         .single();
 
-      if (simError) throw simError;
+      if (chatError) throw chatError;
 
+      // Set messages from chat history
+      if (chatData.messages && Array.isArray(chatData.messages)) {
+        // Parse ISO date strings back to Date objects
+        const parsedMessages = chatData.messages.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+        setMessages(parsedMessages);
+      } else {
+        setMessages([]);
+      }
+
+      const simData = chatData.simulations;
       setSimulationData(simData);
 
       // Load the AI setting associated with this simulation
@@ -66,26 +86,23 @@ export const ChatPage = () => {
       } else {
         alert("This simulation doesn't have an AI setting assigned. Please edit the simulation to assign one.");
       }
-      
-      if (simData.messages && Array.isArray(simData.messages)) {
-        setMessages(simData.messages.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        })));
-      }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading chat data:", error);
+      alert("Chat session not found. It may have been deleted.");
+      navigate('/chats');
+    } finally {
+      setIsInitialLoading(false);
     }
   };
 
   const saveMessages = async (newMessages: Message[]) => {
-    if (!simulationId) return;
+    if (!chatId) return;
     try {
       await supabase
-        .from('simulations')
+        .from('chats')
         .update({ messages: newMessages })
-        .eq('id', simulationId);
+        .eq('id', chatId);
     } catch (error) {
       console.error("Error saving messages:", error);
     }
@@ -113,39 +130,100 @@ export const ChatPage = () => {
     setInput("");
     setIsLoading(true);
 
+    // Check interaction limit
+    const assistantMessagesCount = updatedMessages.filter(m => m.role === 'assistant').length;
+    const maxInteractions = simulationData.max_interactions || 10;
+
+    if (assistantMessagesCount >= maxInteractions) {
+      setTimeout(() => {
+        const limitMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: "❌ **Simulation Failed:** Maximum interaction limit reached.",
+          timestamp: new Date()
+        };
+        const finalMessages = [...updatedMessages, limitMessage];
+        setMessages(finalMessages);
+        saveMessages(finalMessages);
+        setIsLoading(false);
+      }, 500);
+      return;
+    }
+
     try {
       // GPT-5 models (reasoning models) do not support temperature parameter
-      const isReasoningModel = appSettings.model?.startsWith('gpt-5');
-      
+      const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
+
       const chat = new ChatOpenAI({
-        openAIApiKey: appSettings.api_key,
+        apiKey: appSettings.api_key?.trim(),
+        openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0.7 }),
+        // @ts-ignore
+        dangerouslyAllowBrowser: true
       });
 
-      const rules = simulationData.rules ? JSON.stringify(simulationData.rules) : "";
-      const systemMessageContent = `${simulationData.system_prompt}
-      
-      Character: ${simulationData.character}
-      Objective: ${simulationData.objective}
-      ${simulationData.context ? `Context: ${simulationData.context}` : ''}
-      ${rules ? `Rules: ${rules}` : ''}`;
+      const rules = simulationData.rules && Array.isArray(simulationData.rules)
+        ? simulationData.rules.map((r: any) => `- "${r.question}" → "${r.answer}"`).join("\n")
+        : "";
+
+      let systemMessageContent = simulationData.system_prompt || "";
+
+      // Replace wildcards if they exist in the prompt
+      systemMessageContent = systemMessageContent.replace(/{{character}}/g, simulationData.character || "")
+        .replace(/{{objective}}/g, simulationData.objective || "")
+        .replace(/{{context}}/g, simulationData.context || "")
+        .replace(/{{rules}}/g, rules);
+
+      // Append if wildcards were NOT used (legacy behavior / fallback)
+      if (!systemMessageContent.includes(simulationData.character) && simulationData.character) {
+        systemMessageContent += `\n\nCharacter: ${simulationData.character}`;
+      }
+      if (!systemMessageContent.includes(simulationData.objective) && simulationData.objective) {
+        systemMessageContent += `\n\nObjective: ${simulationData.objective}`;
+      }
+      if (!systemMessageContent.includes(simulationData.context) && simulationData.context) {
+        systemMessageContent += `\n\nContext: ${simulationData.context}`;
+      }
+      if (!systemMessageContent.includes(rules) && rules) {
+        systemMessageContent += `\n\nRules: ${rules}`;
+      }
 
       const history = [
         new SystemMessage(systemMessageContent),
         ...updatedMessages.map(m => m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content))
       ];
 
-      const response = await chat.invoke(history);
-      
+      // Create a temporary bot message for streaming
+      const botMessageId = (Date.now() + 1).toString();
       const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: botMessageId,
         role: 'assistant',
-        content: response.content as string,
+        content: '',
         timestamp: new Date()
       };
 
-      const finalMessages = [...updatedMessages, botMessage];
+      // Add the empty bot message to UI immediately
+      setMessages(prev => [...prev, botMessage]);
+
+      const stream = await chat.stream(history);
+      let fullContent = "";
+
+      for await (const chunk of stream) {
+        const content = chunk.content as string;
+        if (content) {
+          fullContent += content;
+          setMessages(prev => prev.map(msg =>
+            msg.id === botMessageId
+              ? { ...msg, content: fullContent }
+              : msg
+          ));
+        }
+      }
+
+      // Once complete, update the message with full content and save
+      const finalBotMessage = { ...botMessage, content: fullContent };
+      const finalMessages = [...updatedMessages, finalBotMessage];
       setMessages(finalMessages);
       saveMessages(finalMessages);
 
@@ -171,7 +249,15 @@ export const ChatPage = () => {
     }
   };
 
-  if (!simulationId) return <div className="p-8">No simulation selected</div>;
+  if (!chatId) return <div className="p-8">No chat selected</div>;
+
+  if (isInitialLoading) {
+    return (
+      <div className="chat-page">
+        <LoadingSpinner message="Loading chat..." />
+      </div>
+    );
+  }
 
   return (
     <div className="chat-page">
@@ -207,7 +293,7 @@ export const ChatPage = () => {
               </div>
             ))
           )}
-          {isLoading && (
+          {isLoading && messages.length > 0 && messages[messages.length - 1].role !== 'assistant' && (
             <div className="message-wrapper assistant">
               <div className="message-avatar"><Bot size={20} /></div>
               <div className="message-bubble typing">
@@ -232,14 +318,19 @@ export const ChatPage = () => {
               className="chat-input"
               disabled={isLoading}
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`send-btn ${!input.trim() || isLoading ? 'disabled' : ''}`}
               disabled={!input.trim() || isLoading}
             >
               {isLoading ? <StopCircle size={20} /> : <Send size={20} />}
             </button>
           </form>
+          {simulationData && (
+            <div className="interactions-counter" style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+              Interactions: {messages.filter(m => m.role === 'assistant').length} / {simulationData.max_interactions || 10}
+            </div>
+          )}
         </div>
       </div>
     </div>

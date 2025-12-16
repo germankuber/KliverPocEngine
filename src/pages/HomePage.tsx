@@ -1,77 +1,193 @@
-import { useNavigate } from 'react-router-dom';
-import { Settings, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { Play, Plus, Settings as SettingsIcon } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import './HomePage.css';
+
+type Simulation = {
+  id: string;
+  name: string;
+  created_at: string;
+  character?: string;
+  objective?: string;
+  rules?: { question: string; answer: string }[];
+  setting_id?: string;
+};
+
+type Setting = {
+  id: string;
+  name: string;
+  model: string;
+};
 
 export const HomePage = () => {
   const navigate = useNavigate();
+  const [simulations, setSimulations] = useState<Simulation[]>([]);
+  const [settings, setSettings] = useState<Setting[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [startingSimId, setStartingSimId] = useState<string | null>(null);
+  const isStartingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch simulations
+      const { data: simulationsData, error: simError } = await supabase
+        .from('simulations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (simError) throw simError;
+
+      // Fetch settings
+      const { data: settingsData, error: setError } = await supabase
+        .from('ai_settings')
+        .select('id, name, model');
+
+      if (setError) throw setError;
+
+      setSimulations(simulationsData || []);
+      setSettings(settingsData || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Error loading simulations");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartChat = async (e: React.MouseEvent, simId: string) => {
+    e.preventDefault();
+    
+    // Prevent double clicks using ref for immediate check
+    if (isStartingRef.current) return;
+    
+    isStartingRef.current = true;
+    setStartingSimId(simId);
+    
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert({ simulation_id: simId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      navigate(`/chat/${data.id}`);
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      toast.error('Failed to start chat session');
+      setStartingSimId(null);
+      isStartingRef.current = false;
+    }
+  };
 
   return (
-    <div style={{ 
-      textAlign: 'center', 
-      padding: '4rem 2rem', 
-      width: '100%' 
-    }}>
-      <div style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '64px',
-        height: '64px',
-        backgroundColor: '#eef2ff',
-        borderRadius: '16px',
-        color: '#4f46e5',
-        marginBottom: '2rem'
-      }}>
-        <Settings size={32} />
+    <div className="home-page">
+      <Toaster position="top-right" />
+      
+      <div className="home-header">
+        <div className="header-content">
+          <div className="header-icon">
+            <SettingsIcon size={32} />
+          </div>
+          <h1>Welcome to KliverPoc Engine</h1>
+          <p>Select a simulation scenario to start chatting with your AI agent.</p>
+        </div>
       </div>
-      
-      <h1 style={{ 
-        fontSize: '3rem', 
-        fontWeight: '800', 
-        marginBottom: '1rem',
-        background: 'linear-gradient(135deg, #111827 0%, #4b5563 100%)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-      }}>
-        Welcome to KliverPoc Engine
-      </h1>
-      
-      <p style={{ 
-        fontSize: '1.25rem', 
-        color: '#6b7280', 
-        marginBottom: '3rem',
-        lineHeight: '1.6' 
-      }}>
-        Design, configure, and test your AI agents in a powerful and intuitive environment.
-      </p>
 
-      <button 
-        onClick={() => navigate('/config')}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          padding: '1rem 2rem',
-          backgroundColor: '#4f46e5',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '1.1rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
-          transition: 'all 0.2s'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(79, 70, 229, 0.3)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(79, 70, 229, 0.2)';
-        }}
-      >
-        Start Configuration <ArrowRight size={20} />
-      </button>
+      {isLoading ? (
+        <LoadingSpinner message="Loading simulations..." />
+      ) : simulations.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">
+            <SettingsIcon size={48} />
+          </div>
+          <h2>No Simulations Yet</h2>
+          <p>Create your first simulation scenario to get started with AI conversations.</p>
+          <Link to="/simulations" className="btn btn-primary">
+            <Plus size={20} /> Create Simulation
+          </Link>
+        </div>
+      ) : (
+        <div className="simulations-section">
+          <div className="section-header">
+            <h2>Available Simulations</h2>
+            <Link to="/simulations" className="btn btn-secondary btn-sm">
+              <Plus size={16} /> New Simulation
+            </Link>
+          </div>
+          
+          <div className="simulations-grid">
+            {simulations.map(sim => {
+              const setting = settings.find(s => s.id === sim.setting_id);
+              const isStarting = startingSimId === sim.id;
+              return (
+                <div 
+                  key={sim.id} 
+                  className="simulation-card-link"
+                  onClick={(e) => handleStartChat(e, sim.id)}
+                  style={{ cursor: isStarting ? 'wait' : 'pointer' }}
+                >
+                  <div className="simulation-card">
+                    <div className="card-header">
+                      <h3>{sim.name}</h3>
+                      {setting && (
+                        <span className="model-badge">{setting.model}</span>
+                      )}
+                    </div>
+                    <div className="card-body">
+                      {sim.character && (
+                        <p>
+                          <strong>Character:</strong>
+                          <span className="truncate-text">{sim.character}</span>
+                        </p>
+                      )}
+                      {sim.objective && (
+                        <p>
+                          <strong>Objective:</strong>
+                          <span className="truncate-text">{sim.objective}</span>
+                        </p>
+                      )}
+                      {sim.rules && sim.rules.length > 0 && (
+                        <p className="rules-info">
+                          <strong>Rules:</strong>
+                          <span>{sim.rules.length} defined</span>
+                        </p>
+                      )}
+                    </div>
+                    <div className="card-footer">
+                      <span className="card-date">
+                        {new Date(sim.created_at).toLocaleDateString()}
+                      </span>
+                      <div className="play-button">
+                        {isStarting ? (
+                          <>
+                            <div className="spinner-small"></div>
+                            <span>Starting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={20} />
+                            <span>Start Chat</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

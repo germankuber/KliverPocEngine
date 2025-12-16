@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Play, Plus, Trash2, Edit2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import './SimulationPage.css';
 
 type Rule = {
@@ -18,6 +19,7 @@ type SimulationInputs = {
   character: string;
   objective: string;
   context: string;
+  maxInteractions: number;
   rules: Rule[];
   settingId: string;
 };
@@ -30,6 +32,7 @@ type Simulation = {
   character?: string;
   objective?: string;
   context?: string;
+  max_interactions?: number;
   rules?: Rule[];
   setting_id?: string;
 };
@@ -40,28 +43,33 @@ type Setting = {
   model: string;
 };
 
-export const SimulationPage = () => {
+export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [settings, setSettings] = useState<Setting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [simulationToDelete, setSimulationToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [runningSimId, setRunningSimId] = useState<string | null>(null);
+  const isRunningRef = useRef<boolean>(false);
 
-  const { register, control, handleSubmit, reset, setValue, formState: { errors } } = useForm<SimulationInputs>({
+  const { register, control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<SimulationInputs>({
     defaultValues: {
       name: "",
       systemPrompt: "You are a helpful assistant.",
       character: "Helpful Assistant",
       objective: "Help the user with their tasks.",
       context: "",
+      maxInteractions: 10,
       rules: [{ question: "How should you respond?", answer: "Polite and concise." }],
       settingId: ""
     }
   });
+
+  const maxInteractionsValue = watch("maxInteractions");
 
   const { fields, append, remove, replace } = useFieldArray({
     control,
@@ -72,6 +80,30 @@ export const SimulationPage = () => {
     fetchData();
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (isNew) {
+      reset();
+      return;
+    }
+
+    if (id && simulations.length > 0) {
+      const sim = simulations.find(s => s.id === id);
+      if (sim) {
+        setValue('name', sim.name);
+        setValue('systemPrompt', sim.system_prompt || '');
+        setValue('character', sim.character || '');
+        setValue('objective', sim.objective || '');
+        setValue('context', sim.context || '');
+        setValue('maxInteractions', sim.max_interactions || 10);
+        setValue('settingId', sim.setting_id || '');
+        
+        if (sim.rules && sim.rules.length > 0) {
+          replace(sim.rules);
+        }
+      }
+    }
+  }, [id, isNew, simulations, setValue, replace, reset]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -107,24 +139,11 @@ export const SimulationPage = () => {
   };
 
   const handleEdit = (sim: Simulation) => {
-    setEditingId(sim.id);
-    setShowCreateForm(true);
-    
-    setValue('name', sim.name);
-    setValue('systemPrompt', sim.system_prompt || '');
-    setValue('character', sim.character || '');
-    setValue('objective', sim.objective || '');
-    setValue('context', sim.context || '');
-    setValue('settingId', sim.setting_id || '');
-    
-    if (sim.rules && sim.rules.length > 0) {
-      replace(sim.rules);
-    }
+    navigate(`/simulations/${sim.id}`);
   };
 
   const handleCancel = () => {
-    setShowCreateForm(false);
-    setEditingId(null);
+    navigate('/simulations');
     reset();
   };
 
@@ -147,7 +166,7 @@ export const SimulationPage = () => {
 
       toast.success("Simulation deleted successfully");
       
-      if (editingId === simulationToDelete) {
+      if (id === simulationToDelete) {
         handleCancel();
       }
       
@@ -162,6 +181,31 @@ export const SimulationPage = () => {
     }
   };
 
+  const handleRun = async (simId: string) => {
+    // Prevent double clicks using ref for immediate check
+    if (isRunningRef.current) return;
+    
+    isRunningRef.current = true;
+    setRunningSimId(simId);
+    
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert({ simulation_id: simId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      navigate(`/chat/${data.id}`);
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      toast.error('Failed to start chat session');
+      setRunningSimId(null);
+      isRunningRef.current = false;
+    }
+  };
+
   const onSubmit: SubmitHandler<SimulationInputs> = async (data) => {
     setIsCreating(true);
     try {
@@ -171,7 +215,7 @@ export const SimulationPage = () => {
         return;
       }
 
-      if (editingId) {
+      if (id && !isNew) {
         const { error } = await supabase
           .from('simulations')
           .update({
@@ -180,10 +224,11 @@ export const SimulationPage = () => {
             character: data.character,
             objective: data.objective,
             context: data.context,
+            max_interactions: Number(data.maxInteractions),
             rules: data.rules,
             setting_id: data.settingId
           })
-          .eq('id', editingId);
+          .eq('id', id);
 
         if (error) throw error;
         toast.success("Simulation updated successfully");
@@ -196,6 +241,7 @@ export const SimulationPage = () => {
             character: data.character,
             objective: data.objective,
             context: data.context,
+            max_interactions: Number(data.maxInteractions),
             rules: data.rules,
             setting_id: data.settingId
           });
@@ -204,9 +250,7 @@ export const SimulationPage = () => {
         toast.success("Simulation created successfully");
       }
       
-      reset();
-      setShowCreateForm(false);
-      setEditingId(null);
+      handleCancel();
       fetchData();
     } catch (error) {
       console.error("Error saving simulation:", error);
@@ -215,6 +259,8 @@ export const SimulationPage = () => {
       setIsCreating(false);
     }
   };
+
+  const showForm = !!id || isNew;
 
   return (
     <div className="simulation-page">
@@ -235,21 +281,21 @@ export const SimulationPage = () => {
         <p>Create and run simulation scenarios with specific agent behaviors.</p>
       </div>
 
-      {!showCreateForm ? (
+      {!showForm ? (
         <button 
           className="btn btn-primary mb-4" 
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => navigate('/simulations/new')}
         >
           <Plus size={20} /> Create New Simulation
         </button>
       ) : (
         <div className="create-sim-section">
           <div className="flex justify-between items-center mb-4">
-            <h2>{editingId ? 'Edit Simulation' : 'Define Simulation'}</h2>
-            {editingId && (
+            <h2>{id && !isNew ? 'Edit Simulation' : 'Define Simulation'}</h2>
+            {id && !isNew && (
               <button 
                 type="button" 
-                onClick={() => handleDeleteClick(editingId)}
+                onClick={() => handleDeleteClick(id)}
                 className="btn btn-danger btn-sm"
               >
                 <Trash2 size={16} /> Delete
@@ -344,6 +390,24 @@ export const SimulationPage = () => {
             </div>
 
             <div className="form-group">
+               <label htmlFor="maxInteractions">Max Interactions: <span style={{color: 'var(--primary)', fontWeight: 'bold'}}>{maxInteractionsValue}</span></label>
+               <p className="form-helper-text">Maximum number of responses the AI can give (Range: 5 - 10).</p>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                 <input 
+                   id="maxInteractions"
+                   type="range"
+                   min="5"
+                   max="10"
+                   step="1"
+                   {...register("maxInteractions", { required: true, min: 5, max: 10 })}
+                   className={`form-input ${errors.maxInteractions ? 'error' : ''}`}
+                   style={{ flex: 1, padding: 0, height: '40px' }}
+                 />
+               </div>
+               {errors.maxInteractions && <span className="error-msg">{errors.maxInteractions.message}</span>}
+            </div>
+
+            <div className="form-group">
               <label>Operational Rules</label>
               <p className="form-helper-text">Define specific behaviors and responses for the AI agent.</p>
               <div className="rules-list">
@@ -385,7 +449,7 @@ export const SimulationPage = () => {
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={isCreating}>
-                {editingId ? (
+                {id && !isNew ? (
                   <><Edit2 size={18} /> {isCreating ? "Updating..." : "Update Simulation"}</>
                 ) : (
                   <><Plus size={18} /> {isCreating ? "Creating..." : "Create Simulation"}</>
@@ -404,60 +468,84 @@ export const SimulationPage = () => {
         </div>
       )}
 
-      <div className="simulations-list-section">
-        <h2>Saved Scenarios</h2>
-        {isLoading ? (
-          <p className="loading-text">Loading simulations...</p>
-        ) : simulations.length === 0 ? (
-          <p className="empty-text">No simulations created yet. Create your first scenario to get started.</p>
-        ) : (
-          <div className="simulations-grid">
-            {simulations.map(sim => {
-              const setting = settings.find(s => s.id === sim.setting_id);
-              return (
-                <div key={sim.id} className="simulation-card">
-                  <div className="sim-card-header">
-                    <h3>{sim.name}</h3>
-                    {setting && (
-                      <span className="sim-model-badge">{setting.model}</span>
-                    )}
-                  </div>
-                  <div className="sim-card-body">
-                     <p><strong>Character:</strong> <span className="truncate-inline">{sim.character || 'N/A'}</span></p>
-                     <p><strong>Objective:</strong> <span className="truncate-inline">{sim.objective || 'N/A'}</span></p>
+      {!showForm && (
+        <div className="simulations-list-section">
+          <h2>Saved Scenarios</h2>
+          {isLoading ? (
+            <LoadingSpinner message="Loading simulations..." />
+          ) : simulations.length === 0 ? (
+            <p className="empty-text">No simulations created yet. Create your first scenario to get started.</p>
+          ) : (
+            <div className="simulations-grid">
+              {simulations.map(sim => {
+                const setting = settings.find(s => s.id === sim.setting_id);
+                return (
+                  <div key={sim.id} className="simulation-card">
+                    <div className="sim-card-header">
+                      <h3>{sim.name}</h3>
+                      {setting && (
+                        <span className="sim-model-badge">{setting.model}</span>
+                      )}
+                    </div>
+                    <div className="sim-card-body">
+                       <p>
+                         <strong>Character:</strong>
+                         <span className="truncate-inline">{sim.character || 'N/A'}</span>
+                       </p>
+                     <p>
+                       <strong>Objective:</strong>
+                       <span className="truncate-inline">{sim.objective || 'N/A'}</span>
+                     </p>
+                     <p>
+                        <strong>Max Interactions:</strong>
+                        <span>{sim.max_interactions || 10}</span>
+                     </p>
                      {sim.rules && sim.rules.length > 0 && (
-                       <p className="rules-count"><strong>Rules:</strong> {sim.rules.length} defined</p>
-                     )}
-                  </div>
-                  <div className="sim-card-footer">
-                    <span className="sim-date">
-                      {new Date(sim.created_at).toLocaleDateString()}
-                    </span>
-                    <div className="sim-actions">
-                      <button 
-                        onClick={() => handleDeleteClick(sim.id)}
-                        className="btn btn-danger btn-sm"
-                        title="Delete simulation"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(sim)}
-                        className="btn btn-secondary btn-sm"
-                      >
-                        <Edit2 size={16} /> Edit
-                      </button>
-                      <Link to={`/chat/${sim.id}`} className="btn btn-primary btn-sm">
-                        <Play size={16} /> Run
-                      </Link>
+                         <p className="rules-count">
+                           <strong>Rules:</strong>
+                           <span>{sim.rules.length} defined</span>
+                         </p>
+                       )}
+                    </div>
+                    <div className="sim-card-footer">
+                      <span className="sim-date">
+                        {new Date(sim.created_at).toLocaleDateString()}
+                      </span>
+                      <div className="sim-actions">
+                        <button 
+                          onClick={() => handleRun(sim.id)}
+                          className="btn btn-primary btn-sm"
+                          disabled={!!runningSimId}
+                        >
+                          {runningSimId === sim.id ? (
+                            <span className="spinner-small"></span>
+                          ) : (
+                            <Play size={16} />
+                          )} 
+                          {runningSimId === sim.id ? 'Starting...' : 'Run'}
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(sim)}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          <Edit2 size={16} /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClick(sim.id)}
+                          className="btn btn-danger btn-sm btn-icon-only"
+                          title="Delete simulation"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

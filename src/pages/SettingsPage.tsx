@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import './SettingsPage.css';
 
 type SettingInputs = {
@@ -256,7 +257,7 @@ export const SettingsPage = () => {
       <div className="settings-list-section">
         <h2>Saved Settings</h2>
         {isLoading ? (
-          <p>Loading settings...</p>
+          <LoadingSpinner message="Loading settings..." />
         ) : settings.length === 0 ? (
           <p className="empty-text">No settings created yet. Create your first AI setting to get started.</p>
         ) : (
