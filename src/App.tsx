@@ -3,6 +3,8 @@ import { Sidebar } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
 import { ChatPage } from './pages/ChatPage';
 import { ChatListPage } from './pages/ChatListPage';
+import { ChatAnalysesPage } from './pages/ChatAnalysesPage';
+import { ChatAnalysisResultPage } from './pages/ChatAnalysisResultPage';
 import { SimulationPage } from './pages/SimulationPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PathsPage } from './pages/PathsPage';
@@ -23,6 +25,8 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/chats" element={<ChatListPage />} />
+          <Route path="/analyses" element={<ChatAnalysesPage />} />
+          <Route path="/analyses/:id" element={<ChatAnalysisResultPage />} />
           <Route path="/simulations" element={<SimulationPage />} />
           <Route path="/simulations/new" element={<SimulationPage isNew />} />
           <Route path="/simulations/:id" element={<SimulationPage />} />
