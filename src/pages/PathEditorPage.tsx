@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2, GripVertical, Save, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './PathEditorPage.css';
 
@@ -221,157 +221,184 @@ export const PathEditorPage = () => {
         return <LoadingSpinner />;
     }
 
-    return (
-        <div className="path-editor-page">
-            <div className="editor-header">
-                <button onClick={() => navigate('/paths')} className="back-btn">
-                    <ArrowLeft size={20} />
-                    Back to Paths
-                </button>
-                <h1>{isEditing ? 'Edit Path' : 'Create New Path'}</h1>
+  return (
+    <div className="path-editor-page">
+      <div className="simulation-header">
+        <h1>Learning Paths</h1>
+        <p>Create and manage learning paths with multiple simulations</p>
+      </div>
+
+      <div className="create-sim-section">
+        <div className="flex justify-between items-center mb-4">
+          <h2>{isEditing ? 'Edit Path' : 'Create New Path'}</h2>
+        </div>
+
+        <div className="create-sim-form-expanded">
+          <div className="form-group">
+            <label htmlFor="pathName">Path Name</label>
+            <input
+              id="pathName"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Customer Service Training"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description <span style={{fontWeight: 'normal', color: '#9ca3af'}}>(Optional)</span></label>
+            <p className="form-helper-text">Brief description of this learning path.</p>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what this path teaches..."
+              className="form-textarea"
+              rows={3}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="checkbox-input"
+              />
+              <span>Make this path publicly accessible</span>
+            </label>
+          </div>
+
+          <div className="form-group">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <label>Simulations</label>
+                <p className="form-helper-text">Add and order simulations for this learning path.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSimulationPicker(!showSimulationPicker)}
+                className="btn btn-secondary btn-sm"
+              >
+                <Plus size={16} />
+                Add Simulation
+              </button>
             </div>
 
-            <div className="editor-content">
-                <div className="editor-section">
-                    <label className="form-label">
-                        Path Name *
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Customer Service Training"
-                            className="form-input"
-                        />
-                    </label>
-
-                    <label className="form-label">
-                        Description
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Brief description of this learning path"
-                            className="form-textarea"
-                            rows={3}
-                        />
-                    </label>
-
-                    <label className="form-checkbox">
-                        <input
-                            type="checkbox"
-                            checked={isPublic}
-                            onChange={(e) => setIsPublic(e.target.checked)}
-                        />
-                        <span>Make this path publicly accessible</span>
-                    </label>
+            {showSimulationPicker && (
+              <div className="simulation-picker">
+                <p style={{fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.75rem'}}>
+                  Select a simulation to add:
+                </p>
+                <div className="simulations-list">
+                  {availableSimulations.map(sim => (
+                    <button
+                      key={sim.id}
+                      type="button"
+                      onClick={() => handleAddSimulation(sim)}
+                      className="simulation-item"
+                    >
+                      <div>
+                        <div className="sim-name">{sim.name}</div>
+                        <div className="sim-character">Character: {sim.character}</div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
+            )}
 
-                <div className="editor-section">
-                    <div className="section-header">
-                        <h2>Simulations</h2>
+            {pathSimulations.length === 0 ? (
+              <div className="empty-simulations">
+                <p>No simulations added yet. Click "Add Simulation" to get started.</p>
+              </div>
+            ) : (
+              <div className="rules-list">
+                {pathSimulations.map((ps, index) => (
+                  <div key={ps.simulation_id} className="rule-item">
+                    <div className="sim-order">
+                      <div className="order-buttons">
                         <button
-                            onClick={() => setShowSimulationPicker(!showSimulationPicker)}
-                            className="add-simulation-btn"
+                          type="button"
+                          onClick={() => moveSimulation(index, 'up')}
+                          disabled={index === 0}
+                          className="order-btn"
                         >
-                            <Plus size={18} />
-                            Add Simulation
+                          ↑
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => moveSimulation(index, 'down')}
+                          disabled={index === pathSimulations.length - 1}
+                          className="order-btn"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                      <GripVertical size={16} className="grip-icon" />
+                      <span className="order-number">{index + 1}</span>
                     </div>
 
-                    {showSimulationPicker && (
-                        <div className="simulation-picker">
-                            <h3>Select a simulation to add:</h3>
-                            <div className="simulations-list">
-                                {availableSimulations.map(sim => (
-                                    <button
-                                        key={sim.id}
-                                        onClick={() => handleAddSimulation(sim)}
-                                        className="simulation-item"
-                                    >
-                                        <div>
-                                            <div className="sim-name">{sim.name}</div>
-                                            <div className="sim-character">Character: {sim.character}</div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    <div className="sim-info">
+                      <div className="sim-name">{ps.simulation?.name}</div>
+                      <div className="sim-character">
+                        Character: {ps.simulation?.character}
+                      </div>
+                    </div>
 
-                    {pathSimulations.length === 0 ? (
-                        <div className="empty-simulations">
-                            <p>No simulations added yet. Click "Add Simulation" to get started.</p>
-                        </div>
-                    ) : (
-                        <div className="path-simulations-list">
-                            {pathSimulations.map((ps, index) => (
-                                <div key={ps.simulation_id} className="path-simulation-item">
-                                    <div className="sim-order">
-                                        <div className="order-buttons">
-                                            <button
-                                                onClick={() => moveSimulation(index, 'up')}
-                                                disabled={index === 0}
-                                                className="order-btn"
-                                            >
-                                                ↑
-                                            </button>
-                                            <button
-                                                onClick={() => moveSimulation(index, 'down')}
-                                                disabled={index === pathSimulations.length - 1}
-                                                className="order-btn"
-                                            >
-                                                ↓
-                                            </button>
-                                        </div>
-                                        <GripVertical size={20} className="grip-icon" />
-                                        <span className="order-number">{index + 1}</span>
-                                    </div>
+                    <div className="sim-attempts">
+                      <label style={{fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: '600'}}>
+                        Max Attempts:
+                        <input
+                          type="number"
+                          min="1"
+                          value={ps.max_attempts}
+                          onChange={(e) =>
+                            handleUpdateAttempts(index, parseInt(e.target.value) || 1)
+                          }
+                          className="attempts-input"
+                        />
+                      </label>
+                    </div>
 
-                                    <div className="sim-info">
-                                        <div className="sim-name">{ps.simulation?.name}</div>
-                                        <div className="sim-character">
-                                            Character: {ps.simulation?.character}
-                                        </div>
-                                    </div>
-
-                                    <div className="sim-attempts">
-                                        <label>
-                                            Max Attempts:
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={ps.max_attempts}
-                                                onChange={(e) =>
-                                                    handleUpdateAttempts(index, parseInt(e.target.value) || 1)
-                                                }
-                                                className="attempts-input"
-                                            />
-                                        </label>
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleRemoveSimulation(index)}
-                                        className="remove-btn"
-                                        title="Remove"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="editor-actions">
-                    <button onClick={() => navigate('/paths')} className="cancel-btn">
-                        Cancel
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSimulation(index)}
+                      className="btn-icon-delete"
+                      title="Remove"
+                    >
+                      <Trash2 size={18} />
                     </button>
-                    <button onClick={handleSave} disabled={isSaving} className="save-btn">
-                        <Save size={18} />
-                        {isSaving ? 'Saving...' : 'Save Path'}
-                    </button>
-                </div>
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-actions">
+            <button 
+              type="button"
+              onClick={handleSave} 
+              disabled={isSaving} 
+              className="btn btn-primary"
+            >
+              <Save size={18} />
+              {isSaving ? 'Saving...' : (isEditing ? 'Update Path' : 'Create Path')}
+            </button>
+            <button 
+              type="button"
+              onClick={() => navigate('/paths')} 
+              className="btn btn-secondary"
+              disabled={isSaving}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
