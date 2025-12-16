@@ -33,7 +33,6 @@ export const ChatPage = () => {
   const [completionMessage, setCompletionMessage] = useState('');
   const [isPathMode, setIsPathMode] = useState(false);
   const [pathId, setPathId] = useState<string | null>(null);
-  const [pathSimId, setPathSimId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,13 +49,11 @@ export const ChatPage = () => {
       // Check if we're in path mode
       const params = new URLSearchParams(window.location.search);
       const pathIdParam = params.get('pathId');
-      const pathSimIdParam = params.get('pathSimId');
       
-      if (pathIdParam && pathSimIdParam) {
-        console.log('🛤️ Path mode activated:', { pathId: pathIdParam, pathSimId: pathSimIdParam });
+      if (pathIdParam) {
+        console.log('🛤️ Path mode activated:', { pathId: pathIdParam });
         setIsPathMode(true);
         setPathId(pathIdParam);
-        setPathSimId(pathSimIdParam);
       } else {
         console.log('ℹ️ Regular chat mode (not in path)');
       }
@@ -245,15 +242,6 @@ export const ChatPage = () => {
     } catch (error) {
       console.error('Error updating path progress:', error);
     }
-  };
-
-  const checkAllRulesCompleted = () => {
-    if (!simulationData?.rules || simulationData.rules.length === 0) return false;
-    
-    const totalRules = Object.keys(rulesTracker).length;
-    const completedRules = Object.values(rulesTracker).filter(Boolean).length;
-    
-    return totalRules > 0 && completedRules === totalRules;
   };
 
   const evaluateRules = async (response: string, simData: any, evaluationPrompt: string) => {
