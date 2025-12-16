@@ -28,6 +28,7 @@ type PathProgress = {
     simulation_id: string;
     attempts_used: number;
     completed: boolean;
+    last_attempt_failed?: boolean;
 };
 
 type Path = {
@@ -129,6 +130,7 @@ export const PathPlayerPage = () => {
                     simulation_id: p.simulation_id,
                     attempts_used: p.attempts_used,
                     completed: p.completed,
+                    last_attempt_failed: p.last_attempt_failed,
                 };
             });
             setProgress(progressMap);
@@ -155,6 +157,11 @@ export const PathPlayerPage = () => {
 
         if (prog && prog.attempts_used >= pathSim.max_attempts) {
             return 'failed';
+        }
+
+        // If there's a previous failed attempt but still has attempts left
+        if (prog && prog.last_attempt_failed && prog.attempts_used < pathSim.max_attempts) {
+            return 'retry';
         }
 
         return 'available';
@@ -320,13 +327,18 @@ export const PathPlayerPage = () => {
                 </p>
                 <p className="simulation-scenario">{pathSim.simulations.objective}</p>
 
-                                <div className="simulation-meta">
+                <div className="simulations-meta">
                                     {status === 'completed' && (
                                         <span className="status-badge completed-badge">✓ Completed</span>
                                     )}
                                     {status === 'failed' && (
                                         <span className="status-badge failed-badge">
-                                            No attempts left
+                                            ❌ Failed - No attempts left
+                                        </span>
+                                    )}
+                                    {status === 'retry' && (
+                                        <span className="status-badge retry-badge">
+                                            ⚠️ Previous attempt failed - {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining
                                         </span>
                                     )}
                                     {status === 'available' && (
@@ -336,7 +348,7 @@ export const PathPlayerPage = () => {
                                     )}
                                     {status === 'locked' && (
                                         <span className="status-badge locked-badge">
-                                            Complete previous step
+                                            🔒 Complete previous step
                                         </span>
                                     )}
                                 </div>
