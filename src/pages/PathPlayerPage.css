@@ -189,6 +189,11 @@
   background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
 }
 
+.simulation-card.retry {
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
 .simulation-status-icon {
   flex-shrink: 0;
   display: flex;
@@ -220,6 +225,12 @@
 .simulation-card.failed .simulation-status-icon {
   background: #fee2e2;
   color: #ef4444;
+}
+
+.simulation-card.retry .simulation-status-icon {
+  background: #fef3c7;
+  color: #f59e0b;
+  border: 3px solid #f59e0b;
 }
 
 .simulation-content {
@@ -286,6 +297,11 @@
   color: #991b1b;
 }
 
+.retry-badge {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 .locked-badge {
   background: #f3f4f6;
   color: #6b7280;
@@ -325,6 +341,10 @@
 
 .simulation-card.completed .start-simulation-btn {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.simulation-card.retry .start-simulation-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
 }
 
 /* Completion Banner */

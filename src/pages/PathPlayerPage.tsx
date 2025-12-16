@@ -359,7 +359,7 @@ export const PathPlayerPage = () => {
                     className="start-simulation-btn"
                   >
                     <Play size={18} />
-                    {status === 'completed' ? 'Play Again' : 'Start Simulation'}
+                    {status === 'completed' ? 'Play Again' : status === 'retry' ? 'Retry' : 'Start Simulation'}
                   </button>
                 )}
                             </div>

@@ -53,9 +53,12 @@ export const ChatPage = () => {
       const pathSimIdParam = params.get('pathSimId');
       
       if (pathIdParam && pathSimIdParam) {
+        console.log('🛤️ Path mode activated:', { pathId: pathIdParam, pathSimId: pathSimIdParam });
         setIsPathMode(true);
         setPathId(pathIdParam);
         setPathSimId(pathSimIdParam);
+      } else {
+        console.log('ℹ️ Regular chat mode (not in path)');
       }
       
       loadData(chatId);
@@ -196,11 +199,19 @@ export const ChatPage = () => {
     }
   };
 
-  const updatePathProgress = async (completed: boolean) => {
+  const updatePathProgress = async (completed: boolean, failed: boolean = false) => {
     if (!pathId || !simulationData?.id) return;
     
     try {
       const userIdentifier = localStorage.getItem('path_user_identifier') || 'anonymous';
+      
+      console.log('🔄 Updating path progress:', {
+        pathId,
+        simulationId: simulationData.id,
+        userIdentifier,
+        completed,
+        failed
+      });
       
       const { data: currentProgress } = await supabase
         .from('path_progress')
@@ -210,7 +221,7 @@ export const ChatPage = () => {
         .eq('user_identifier', userIdentifier)
         .single();
       
-      await supabase
+      const { data, error } = await supabase
         .from('path_progress')
         .upsert({
           path_id: pathId,
@@ -218,8 +229,19 @@ export const ChatPage = () => {
           user_identifier: userIdentifier,
           attempts_used: (currentProgress?.attempts_used || 0),
           completed: completed,
+          last_attempt_failed: failed,
           updated_at: new Date().toISOString()
-        });
+        }, {
+          onConflict: 'path_id,simulation_id,user_identifier'
+        })
+        .select();
+      
+      if (error) {
+        console.error('❌ Error updating path progress:', error);
+        throw error;
+      }
+      
+      console.log('✅ Path progress updated successfully:', data);
     } catch (error) {
       console.error('Error updating path progress:', error);
     }
@@ -314,13 +336,19 @@ export const ChatPage = () => {
           const allRulesMatched = Object.values(updatedTracker).every(status => status === true);
           if (allRulesMatched) {
             console.log("🎉 All rules matched! Showing completion modal");
+            console.log("📊 Updated tracker:", updatedTracker);
+            console.log("🔄 Updating chat status to completed");
+            
             setCompletionMessage('🎉 Congratulations! You have completed all the rules for this simulation!');
             setShowCompletionModal(true);
             await updateChatStatus('completed');
             
-            // If in path mode, update path progress
+            // If in path mode, update path progress as completed
             if (isPathMode && pathId) {
-              await updatePathProgress(true);
+              console.log("🛤️ Path mode detected, updating path progress");
+              await updatePathProgress(true, false);
+            } else {
+              console.log("ℹ️ Not in path mode, skipping path progress update");
             }
           }
         } else {
@@ -384,6 +412,12 @@ export const ChatPage = () => {
         
         // Mark as failed
         await updateChatStatus('failed');
+        
+        // If in path mode, update path progress as failed
+        if (isPathMode && pathId) {
+          await updatePathProgress(false, true);
+        }
+        
         setCompletionMessage('❌ Simulation Failed: You reached the maximum number of interactions without completing all objectives.');
         setShowCompletionModal(true);
         setIsLoading(false);
@@ -489,15 +523,6 @@ export const ChatPage = () => {
       const finalMessages = [...updatedMessages, finalBotMessage];
       setMessages(finalMessages);
       saveMessages(finalMessages);
-
-      // Check if all rules are completed after a short delay to allow state update
-      setTimeout(() => {
-        if (checkAllRulesCompleted()) {
-          updateChatStatus('completed');
-          setCompletionMessage('🎉 ¡Felicitaciones! Has completado exitosamente todas las objetivos de la simulación.');
-          setShowCompletionModal(true);
-        }
-      }, 500);
 
     } catch (error) {
       console.error("Chat error:", error);
