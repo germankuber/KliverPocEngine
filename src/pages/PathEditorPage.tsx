@@ -6,9 +6,13 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import './PathEditorPage.css';
 
 type Simulation = {
+  id: string;
+  name: string;
+  characters?: {
     id: string;
     name: string;
-    character: string;
+    description: string;
+  };
 };
 
 type PathSimulation = {
@@ -38,14 +42,26 @@ export const PathEditorPage = () => {
 
     const loadData = async () => {
         try {
-            // Load available simulations
-            const { data: sims, error: simsError } = await supabase
-                .from('simulations')
-                .select('id, name, character')
-                .order('name');
+      // Load available simulations
+      const { data: sims, error: simsError } = await supabase
+        .from('simulations')
+        .select(`
+          id,
+          name,
+          characters(id, name, description)
+        `)
+        .order('name');
 
             if (simsError) throw simsError;
-            setAvailableSimulations(sims || []);
+            // Map to handle the characters array from Supabase (returns array, we need single object)
+            const mappedSims = (sims || []).map((sim: any) => ({
+                id: sim.id,
+                name: sim.name,
+                characters: Array.isArray(sim.characters) && sim.characters.length > 0 
+                    ? sim.characters[0] 
+                    : undefined
+            }));
+            setAvailableSimulations(mappedSims);
 
             // Load path data if editing
             if (isEditing && pathId) {
@@ -68,7 +84,11 @@ export const PathEditorPage = () => {
             simulation_id,
             order_index,
             max_attempts,
-            simulations(id, name, character)
+            simulations(
+              id,
+              name,
+              characters(id, name, description)
+            )
           `)
                     .eq('path_id', pathId)
                     .order('order_index');
@@ -302,7 +322,9 @@ export const PathEditorPage = () => {
                     >
                       <div>
                         <div className="sim-name">{sim.name}</div>
-                        <div className="sim-character">Character: {sim.character}</div>
+                        <div className="sim-character">
+                          Character: {sim.characters?.name || 'N/A'}
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -344,7 +366,7 @@ export const PathEditorPage = () => {
                     <div className="sim-info">
                       <div className="sim-name">{ps.simulation?.name}</div>
                       <div className="sim-character">
-                        Character: {ps.simulation?.character}
+                        Character: {ps.simulation?.characters?.name || 'N/A'}
                       </div>
                     </div>
 
