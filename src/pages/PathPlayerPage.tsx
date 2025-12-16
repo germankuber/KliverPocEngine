@@ -254,21 +254,24 @@ export const PathPlayerPage = () => {
                             className="identifier-input"
                             autoFocus
                         />
-                        <button
-                            onClick={(e) => {
-                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                if (input?.value.trim()) {
-                                    saveUserIdentifier(input.value.trim());
-                                    if (selectedSimulation) {
-                                        handleStartSimulation(selectedSimulation);
-                                        setSelectedSimulation(null);
-                                    }
-                                }
-                            }}
-                            className="identifier-submit"
-                        >
-                            Continue
-                        </button>
+            <button
+              onClick={(e) => {
+                const modal = e.currentTarget.closest('.identifier-modal');
+                const input = modal?.querySelector('input') as HTMLInputElement;
+                if (input?.value?.trim()) {
+                  saveUserIdentifier(input.value.trim());
+                  if (selectedSimulation) {
+                    handleStartSimulation(selectedSimulation);
+                    setSelectedSimulation(null);
+                  }
+                } else {
+                  alert('Please enter your email or name');
+                }
+              }}
+              className="identifier-submit"
+            >
+              Continue
+            </button>
                     </div>
                 </div>
             )}
