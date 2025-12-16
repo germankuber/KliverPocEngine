@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Play, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Play, Plus, Trash2, Edit2, Copy } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
@@ -174,6 +174,34 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
       setIsDeleting(false);
       setDeleteModalOpen(false);
       setSimulationToDelete(null);
+    }
+  };
+
+  const handleClone = async (sim: Simulation) => {
+    try {
+      const clonedData = {
+        name: `${sim.name} (Copy)`,
+        character: sim.character,
+        objective: sim.objective,
+        context: sim.context,
+        max_interactions: sim.max_interactions,
+        rules: sim.rules,
+        setting_id: sim.setting_id
+      };
+
+      const { error } = await supabase
+        .from('simulations')
+        .insert(clonedData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Simulation cloned successfully");
+      fetchData();
+    } catch (error) {
+      console.error("Error cloning simulation:", error);
+      toast.error("Error cloning simulation");
     }
   };
 
@@ -492,33 +520,40 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                       <span className="sim-date">
                         {new Date(sim.created_at).toLocaleDateString()}
                       </span>
-                      <div className="sim-actions">
-                        <button 
-                          onClick={() => handleRun(sim.id)}
-                          className="btn btn-primary btn-sm"
-                          disabled={!!runningSimId}
-                        >
-                          {runningSimId === sim.id ? (
-                            <span className="spinner-small"></span>
-                          ) : (
-                            <Play size={16} />
-                          )} 
-                          {runningSimId === sim.id ? 'Starting...' : 'Run'}
-                        </button>
-                        <button 
-                          onClick={() => handleEdit(sim)}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          <Edit2 size={16} /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteClick(sim.id)}
-                          className="btn btn-danger btn-sm btn-icon-only"
-                          title="Delete simulation"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                    <div className="sim-actions">
+                      <button 
+                        onClick={() => handleRun(sim.id)}
+                        className="btn btn-primary btn-sm"
+                        disabled={!!runningSimId}
+                      >
+                        {runningSimId === sim.id ? (
+                          <span className="spinner-small"></span>
+                        ) : (
+                          <Play size={16} />
+                        )} 
+                        {runningSimId === sim.id ? 'Starting...' : 'Run'}
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(sim)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        <Edit2 size={16} /> Edit
+                      </button>
+                      <button 
+                        onClick={() => handleClone(sim)}
+                        className="btn btn-secondary btn-sm btn-icon-only"
+                        title="Clone simulation"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteClick(sim.id)}
+                        className="btn btn-danger btn-sm btn-icon-only"
+                        title="Delete simulation"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                     </div>
                   </div>
                 );
