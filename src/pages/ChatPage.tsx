@@ -110,6 +110,20 @@ export const ChatPage = () => {
 
       if (!promptsError && promptsData) {
         setGlobalPrompts(promptsData);
+        
+        // Configure LangSmith if enabled
+        if (promptsData.langsmith_enabled && promptsData.langsmith_api_key) {
+          try {
+            process.env.LANGCHAIN_TRACING_V2 = 'true';
+            process.env.LANGCHAIN_API_KEY = promptsData.langsmith_api_key;
+            if (promptsData.langsmith_project) {
+              process.env.LANGCHAIN_PROJECT = promptsData.langsmith_project;
+            }
+            console.log('✅ LangSmith tracing enabled');
+          } catch (langsmithError) {
+            console.error('Error configuring LangSmith:', langsmithError);
+          }
+        }
       } else {
         console.error("Error loading global prompts:", promptsError);
       }
@@ -269,7 +283,12 @@ export const ChatPage = () => {
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0.7 }),
         // @ts-ignore
-        dangerouslyAllowBrowser: true
+        dangerouslyAllowBrowser: true,
+        callbacks: globalPrompts?.langsmith_enabled ? [{
+          handleLLMStart: async () => {
+            console.log('🔍 LangSmith: Tracing LLM call');
+          }
+        }] : undefined
       });
 
       const rules = simulationData.rules && Array.isArray(simulationData.rules)

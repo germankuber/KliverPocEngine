@@ -15,6 +15,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "langchain": "^1.2.0",
+    "langsmith": "^0.4.0",
     "lucide-react": "^0.561.0",
     "openai": "^6.13.0",
     "react": "^19.2.0",

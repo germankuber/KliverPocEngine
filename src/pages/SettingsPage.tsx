@@ -25,6 +25,9 @@ type GlobalPrompts = {
   id: string;
   system_prompt: string;
   evaluation_rule_prompt: string;
+  langsmith_api_key?: string;
+  langsmith_project?: string;
+  langsmith_enabled?: boolean;
 };
 
 export const SettingsPage = () => {
@@ -95,6 +98,9 @@ export const SettingsPage = () => {
         .update({
           system_prompt: globalPrompts.system_prompt,
           evaluation_rule_prompt: globalPrompts.evaluation_rule_prompt,
+          langsmith_api_key: globalPrompts.langsmith_api_key || '',
+          langsmith_project: globalPrompts.langsmith_project || '',
+          langsmith_enabled: globalPrompts.langsmith_enabled || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', globalPrompts.id);
@@ -261,12 +267,56 @@ export const SettingsPage = () => {
               />
             </div>
 
+            <div className="langsmith-section">
+              <h3>LangSmith Configuration</h3>
+              <p className="form-helper-text">Enable tracing and monitoring with LangSmith.</p>
+              
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox"
+                    checked={globalPrompts.langsmith_enabled || false}
+                    onChange={(e) => setGlobalPrompts({...globalPrompts, langsmith_enabled: e.target.checked})}
+                  />
+                  <span>Enable LangSmith Tracing</span>
+                </label>
+              </div>
+
+              {globalPrompts.langsmith_enabled && (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="langsmithApiKey">LangSmith API Key</label>
+                    <input 
+                      id="langsmithApiKey"
+                      type="password"
+                      value={globalPrompts.langsmith_api_key || ''}
+                      onChange={(e) => setGlobalPrompts({...globalPrompts, langsmith_api_key: e.target.value})}
+                      className="form-input"
+                      placeholder="lsv2_pt_..."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="langsmithProject">LangSmith Project Name</label>
+                    <input 
+                      id="langsmithProject"
+                      type="text"
+                      value={globalPrompts.langsmith_project || ''}
+                      onChange={(e) => setGlobalPrompts({...globalPrompts, langsmith_project: e.target.value})}
+                      className="form-input"
+                      placeholder="my-project"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
             <button 
               onClick={handleSavePrompts}
               className="btn btn-primary"
               disabled={isSavingPrompts}
             >
-              <Save size={20} /> {isSavingPrompts ? 'Saving...' : 'Save Global Prompts'}
+              <Save size={20} /> {isSavingPrompts ? 'Saving...' : 'Save Global Settings'}
             </button>
           </div>
         ) : (
