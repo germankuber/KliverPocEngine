@@ -53,14 +53,19 @@ export const PathEditorPage = () => {
         .order('name');
 
             if (simsError) throw simsError;
+            console.log('Raw simulations data:', sims);
             // Map to handle the characters array from Supabase (returns array, we need single object)
-            const mappedSims = (sims || []).map((sim: any) => ({
-                id: sim.id,
-                name: sim.name,
-                characters: Array.isArray(sim.characters) && sim.characters.length > 0 
-                    ? sim.characters[0] 
-                    : undefined
-            }));
+            const mappedSims = (sims || []).map((sim: any) => {
+                console.log('Simulation:', sim.name, 'Characters:', sim.characters);
+                return {
+                    id: sim.id,
+                    name: sim.name,
+                    characters: Array.isArray(sim.characters) && sim.characters.length > 0 
+                        ? sim.characters[0] 
+                        : undefined
+                };
+            });
+            console.log('Mapped simulations:', mappedSims);
             setAvailableSimulations(mappedSims);
 
             // Load path data if editing
