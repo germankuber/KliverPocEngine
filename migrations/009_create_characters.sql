@@ -20,3 +20,4 @@ COMMENT ON COLUMN characters.name IS 'Character name or title';
 COMMENT ON COLUMN characters.description IS 'Detailed character description and persona';
 COMMENT ON COLUMN simulations.character_id IS 'Reference to a reusable character profile';
 
+

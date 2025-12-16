@@ -28,3 +28,4 @@ Esto es normal si:
 
 Abre las DevTools (F12) y busca en Console si hay errores al cargar las simulaciones.
 
+

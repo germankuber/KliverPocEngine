@@ -44,3 +44,4 @@ COMMENT ON TABLE path_progress IS 'Tracks user progress through paths';
 COMMENT ON COLUMN path_simulations.max_attempts IS 'Maximum number of times a simulation can be attempted in this path';
 COMMENT ON COLUMN path_progress.user_identifier IS 'Identifier for the user (email, session ID, or other)';
 
+

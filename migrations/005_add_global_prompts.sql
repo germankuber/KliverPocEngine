@@ -23,3 +23,4 @@ COMMENT ON COLUMN global_prompts.evaluation_rule_prompt IS 'Rules and criteria f
 ALTER TABLE simulations DROP COLUMN IF EXISTS system_prompt;
 ALTER TABLE simulations DROP COLUMN IF EXISTS evaluation_rule_prompt;
 
+

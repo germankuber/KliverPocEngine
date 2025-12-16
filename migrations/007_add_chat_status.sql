@@ -15,3 +15,4 @@ COMMENT ON COLUMN chats.status IS 'Chat status: active (in progress), completed 
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_chats_status ON chats(status);
 
+

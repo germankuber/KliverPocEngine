@@ -52,3 +52,4 @@ Once applied, you can:
 - Characters are automatically loaded in chat sessions
 - Legacy `character` text field is still supported for backward compatibility
 
+
