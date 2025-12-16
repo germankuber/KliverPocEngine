@@ -1,21 +1,37 @@
 .public-chat-container {
-  width: 100%;
+  width: 100vw;
   min-height: 100vh;
   background-color: #f9fafb;
   padding: 0;
+  margin: 0;
+  overflow-x: hidden;
 }
 
 /* Override chat page styles for full width */
 .public-chat-container .chat-page {
-  max-width: 100%;
-  margin: 0;
-  padding: 1rem;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 1rem 2rem !important;
   height: 100vh;
+  box-sizing: border-box;
 }
 
 .public-chat-container .chat-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
   height: 100%;
+}
+
+.public-chat-container .chat-messages {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.public-chat-container .chat-input-container {
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
