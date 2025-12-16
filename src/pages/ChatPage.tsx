@@ -91,7 +91,7 @@ export const ChatPage = () => {
         throw new Error('No reader available');
       }
 
-      const chunks: Uint8Array[] = [];
+      const chunks: BlobPart[] = [];
       let audioStarted = false;
       let mediaSource: MediaSource | null = null;
       let sourceBuffer: SourceBuffer | null = null;
