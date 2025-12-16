@@ -49,6 +49,115 @@
   margin: 0 0 1.5rem 0;
 }
 
+/* Accordion Styles */
+.accordion-root {
+  width: 100%;
+}
+
+.accordion-item {
+  background-color: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.accordion-header {
+  all: unset;
+  display: flex;
+}
+
+.accordion-trigger {
+  all: unset;
+  font-family: inherit;
+  background-color: transparent;
+  padding: 1rem 1.5rem;
+  height: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.accordion-trigger:hover {
+  background-color: #f9fafb;
+}
+
+.accordion-trigger[data-state='open'] {
+  background-color: #f3f4f6;
+}
+
+.accordion-chevron {
+  transition: transform 0.3s cubic-bezier(0.87, 0, 0.13, 1);
+  color: #6b7280;
+  width: 20px;
+  height: 20px;
+}
+
+.accordion-trigger[data-state='open'] .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  overflow: hidden;
+  background-color: white;
+}
+
+.accordion-content[data-state='open'] {
+  animation: slideDown 0.3s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.accordion-content[data-state='closed'] {
+  animation: slideUp 0.3s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+@keyframes slideDown {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.accordion-content .form-group {
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+.form-textarea-large {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 375px;
+  transition: border-color 0.2s;
+}
+
+.form-textarea-large:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
 .prompts-form {
   display: flex;
   flex-direction: column;
@@ -324,3 +433,15 @@
   box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
 }
 
+
+/* Helper text with code styling */
+.form-helper-text code {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85em;
+  font-weight: 600;
+  border: 1px solid #fbbf24;
+}

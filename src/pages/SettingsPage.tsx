@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ChevronDown } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { HighlightedTextarea } from '../components/HighlightedTextarea';
+import * as Accordion from '@radix-ui/react-accordion';
 import './SettingsPage.css';
 
 type SettingInputs = {
@@ -241,31 +243,59 @@ export const SettingsPage = () => {
         
         {globalPrompts ? (
           <div className="prompts-form">
-            <div className="form-group">
-              <label htmlFor="systemPrompt">System Prompt</label>
-              <p className="form-helper-text">Core instructions that define how the AI should behave across all simulations.</p>
-              <textarea 
-                id="systemPrompt" 
-                rows={4}
-                value={globalPrompts.system_prompt}
-                onChange={(e) => setGlobalPrompts({...globalPrompts, system_prompt: e.target.value})}
-                className="form-textarea"
-                placeholder="e.g., You are a helpful assistant that provides accurate and concise information..."
-              />
-            </div>
+            <Accordion.Root type="multiple" className="accordion-root" defaultValue={['system-prompt', 'evaluation-prompt']}>
+              
+              {/* System Prompt Accordion Item */}
+              <Accordion.Item value="system-prompt" className="accordion-item">
+                <Accordion.Header className="accordion-header">
+                  <Accordion.Trigger className="accordion-trigger">
+                    <span>System Prompt</span>
+                    <ChevronDown className="accordion-chevron" />
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="accordion-content">
+                  <div className="form-group">
+                    <p className="form-helper-text">
+                      Core instructions that define how the AI should behave across all simulations. 
+                      Use <code>{'{{character}}'}</code>, <code>{'{{objective}}'}</code>, <code>{'{{context}}'}</code>, <code>{'{{rules}}'}</code> as placeholders.
+                    </p>
+                    <HighlightedTextarea
+                      id="systemPrompt"
+                      value={globalPrompts.system_prompt}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, system_prompt: value})}
+                      placeholder="e.g., You are a helpful assistant that provides accurate and concise information..."
+                      rows={15}
+                    />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
 
-            <div className="form-group">
-              <label htmlFor="evaluationPrompt">Evaluation Rule Prompt</label>
-              <p className="form-helper-text">Rules and criteria for evaluating AI performance and responses.</p>
-              <textarea 
-                id="evaluationPrompt" 
-                rows={4}
-                value={globalPrompts.evaluation_rule_prompt}
-                onChange={(e) => setGlobalPrompts({...globalPrompts, evaluation_rule_prompt: e.target.value})}
-                className="form-textarea"
-                placeholder="e.g., Evaluate if the response follows the defined rules and answers appropriately..."
-              />
-            </div>
+              {/* Evaluation Rule Prompt Accordion Item */}
+              <Accordion.Item value="evaluation-prompt" className="accordion-item">
+                <Accordion.Header className="accordion-header">
+                  <Accordion.Trigger className="accordion-trigger">
+                    <span>Evaluation Rule Prompt</span>
+                    <ChevronDown className="accordion-chevron" />
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="accordion-content">
+                  <div className="form-group">
+                    <p className="form-helper-text">
+                      Rules and criteria for evaluating AI performance and responses.
+                      This prompt receives the AI response and rules to evaluate against.
+                    </p>
+                    <HighlightedTextarea
+                      id="evaluationPrompt"
+                      value={globalPrompts.evaluation_rule_prompt}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, evaluation_rule_prompt: value})}
+                      placeholder="e.g., Evaluate if the response follows the defined rules and answers appropriately..."
+                      rows={15}
+                    />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
+
+            </Accordion.Root>
 
             <div className="langsmith-section">
               <h3>LangSmith Configuration</h3>
