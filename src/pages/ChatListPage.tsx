@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { MessageSquare, Calendar, ArrowRight, Trash2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './ChatListPage.css';
@@ -11,6 +11,7 @@ type Chat = {
   simulation_id: string;
   created_at: string;
   messages: any[];
+  status?: 'active' | 'completed' | 'failed';
   simulations: {
     name: string;
     character: string;
@@ -21,7 +22,6 @@ export const ChatListPage = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchChats();
@@ -96,7 +96,14 @@ export const ChatListPage = () => {
           {chats.map((chat) => (
             <Link key={chat.id} to={`/chat/${chat.id}`} className="chat-card">
               <div className="chat-card-header">
-                <h3>{chat.simulations?.name || 'Unknown Simulation'}</h3>
+                <div className="header-top">
+                  <h3>{chat.simulations?.name || 'Unknown Simulation'}</h3>
+                  {chat.status && chat.status !== 'active' && (
+                    <span className={`status-badge ${chat.status}`}>
+                      {chat.status === 'completed' ? '✅ Completed' : '❌ Failed'}
+                    </span>
+                  )}
+                </div>
                 <span className="chat-date">
                   <Calendar size={14} />
                   {new Date(chat.created_at).toLocaleDateString()}
@@ -137,7 +144,9 @@ export const ChatListPage = () => {
         title="Delete Chat"
         message="Are you sure you want to delete this chat history? This action cannot be undone."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteChatId(null)}
+        onClose={() => setDeleteChatId(null)}
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </div>
   );
