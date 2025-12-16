@@ -196,6 +196,35 @@ export const ChatPage = () => {
     }
   };
 
+  const updatePathProgress = async (completed: boolean) => {
+    if (!pathId || !simulationData?.id) return;
+    
+    try {
+      const userIdentifier = localStorage.getItem('path_user_identifier') || 'anonymous';
+      
+      const { data: currentProgress } = await supabase
+        .from('path_progress')
+        .select('*')
+        .eq('path_id', pathId)
+        .eq('simulation_id', simulationData.id)
+        .eq('user_identifier', userIdentifier)
+        .single();
+      
+      await supabase
+        .from('path_progress')
+        .upsert({
+          path_id: pathId,
+          simulation_id: simulationData.id,
+          user_identifier: userIdentifier,
+          attempts_used: (currentProgress?.attempts_used || 0),
+          completed: completed,
+          updated_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Error updating path progress:', error);
+    }
+  };
+
   const checkAllRulesCompleted = () => {
     if (!simulationData?.rules || simulationData.rules.length === 0) return false;
     
