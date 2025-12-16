@@ -1,0 +1,301 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import { Toaster, toast } from 'react-hot-toast';
+import { ConfirmModal } from '../components/ConfirmModal';
+import './SettingsPage.css';
+
+type SettingInputs = {
+  name: string;
+  apiKey: string;
+  model: string;
+};
+
+type Setting = {
+  id: string;
+  name: string;
+  api_key: string;
+  model: string;
+  created_at: string;
+};
+
+export const SettingsPage = () => {
+  const [settings, setSettings] = useState<Setting[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [settingToDelete, setSettingToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<SettingInputs>({
+    defaultValues: {
+      name: "",
+      apiKey: "",
+      model: "gpt-4o"
+    }
+  });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ai_settings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSettings(data || []);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      toast.error("Error loading settings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (setting: Setting) => {
+    setEditingId(setting.id);
+    setShowCreateForm(true);
+    setValue('name', setting.name);
+    setValue('apiKey', setting.api_key);
+    setValue('model', setting.model);
+  };
+
+  const handleCancel = () => {
+    setShowCreateForm(false);
+    setEditingId(null);
+    reset();
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setSettingToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!settingToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // Check if setting is being used by any simulation
+      const { data: simulations } = await supabase
+        .from('simulations')
+        .select('id')
+        .eq('setting_id', settingToDelete)
+        .limit(1);
+
+      if (simulations && simulations.length > 0) {
+        toast.error("Cannot delete setting: it's being used by one or more simulations");
+        setDeleteModalOpen(false);
+        setSettingToDelete(null);
+        setIsDeleting(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('ai_settings')
+        .delete()
+        .eq('id', settingToDelete);
+
+      if (error) throw error;
+
+      toast.success("Setting deleted successfully");
+      
+      if (editingId === settingToDelete) {
+        handleCancel();
+      }
+      
+      fetchSettings();
+    } catch (error) {
+      console.error("Error deleting setting:", error);
+      toast.error("Error deleting setting");
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setSettingToDelete(null);
+    }
+  };
+
+  const onSubmit: SubmitHandler<SettingInputs> = async (data) => {
+    try {
+      if (editingId) {
+        const { error } = await supabase
+          .from('ai_settings')
+          .update({
+            name: data.name,
+            api_key: data.apiKey,
+            model: data.model
+          })
+          .eq('id', editingId);
+
+        if (error) throw error;
+        toast.success("Setting updated successfully");
+      } else {
+        const { error } = await supabase
+          .from('ai_settings')
+          .insert({
+            name: data.name,
+            api_key: data.apiKey,
+            model: data.model
+          });
+
+        if (error) throw error;
+        toast.success("Setting created successfully");
+      }
+      
+      reset();
+      setShowCreateForm(false);
+      setEditingId(null);
+      fetchSettings();
+    } catch (error) {
+      console.error("Error saving setting:", error);
+      toast.error("Error saving setting");
+    }
+  };
+
+  return (
+    <div className="settings-page">
+      <Toaster position="top-right" />
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Setting"
+        message="Are you sure you want to delete this setting? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+      />
+
+      <div className="settings-header">
+        <h1>AI Settings</h1>
+        <p>Manage multiple API configurations for your simulations.</p>
+      </div>
+
+      {!showCreateForm ? (
+        <button 
+          className="btn btn-primary mb-4" 
+          onClick={() => setShowCreateForm(true)}
+        >
+          <Plus size={20} /> Create New Setting
+        </button>
+      ) : (
+        <div className="create-setting-section">
+          <h2>{editingId ? 'Edit Setting' : 'Create New Setting'}</h2>
+          
+          <form onSubmit={handleSubmit(onSubmit)} className="setting-form">
+            <div className="form-group">
+              <label htmlFor="name">Setting Name</label>
+              <input 
+                id="name"
+                type="text"
+                placeholder="e.g. Production OpenAI, Development, Testing"
+                {...register("name", { required: "Name is required" })}
+                className={`form-input ${errors.name ? 'error' : ''}`}
+              />
+              {errors.name && <span className="error-msg">{errors.name.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="apiKey">OpenAI API Key <span style={{fontWeight: 'normal', color: '#666'}}>(Required)</span></label>
+              <input 
+                id="apiKey"
+                type="password"
+                placeholder="sk-..."
+                {...register("apiKey", { required: "API Key is required" })}
+                className={`form-input ${errors.apiKey ? 'error' : ''}`}
+              />
+              {errors.apiKey && <span className="error-msg">{errors.apiKey.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="model">Model</label>
+              <select 
+                id="model"
+                {...register("model", { required: "Model is required" })}
+                className={`form-input ${errors.model ? 'error' : ''}`}
+              >
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-4.1">GPT-4.1</option>
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="gpt-5">GPT-5 (Reasoning)</option>
+                <option value="gpt-5.1">GPT-5.1 (Reasoning)</option>
+                <option value="gpt-5.2">GPT-5.2 (Reasoning - Latest)</option>
+                <option value="gpt-5-mini">GPT-5 mini (Reasoning)</option>
+                <option value="gpt-5-nano">GPT-5 nano (Reasoning)</option>
+                <option value="gpt-5.2-pro">GPT-5.2 pro (Reasoning)</option>
+              </select>
+              {errors.model && <span className="error-msg">{errors.model.message}</span>}
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                <Save size={20} /> {isSubmitting ? 'Saving...' : editingId ? 'Update Setting' : 'Create Setting'}
+              </button>
+              <button 
+                type="button" 
+                onClick={handleCancel}
+                className="btn btn-secondary"
+                disabled={isSubmitting}
+              >
+                <X size={20} /> Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="settings-list-section">
+        <h2>Saved Settings</h2>
+        {isLoading ? (
+          <p>Loading settings...</p>
+        ) : settings.length === 0 ? (
+          <p className="empty-text">No settings created yet. Create your first AI setting to get started.</p>
+        ) : (
+          <div className="settings-grid">
+            {settings.map(setting => (
+              <div key={setting.id} className="setting-card">
+                <div className="setting-card-header">
+                  <h3>{setting.name}</h3>
+                </div>
+                <div className="setting-card-body">
+                  <p><strong>Model:</strong> {setting.model}</p>
+                  <p><strong>API Key:</strong> {setting.api_key.substring(0, 10)}...{setting.api_key.substring(setting.api_key.length - 4)}</p>
+                </div>
+                <div className="setting-card-footer">
+                  <span className="setting-date">
+                    {new Date(setting.created_at).toLocaleDateString()}
+                  </span>
+                  <div className="setting-actions">
+                    <button 
+                      onClick={() => handleEdit(setting)}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      <Edit2 size={16} /> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(setting.id)}
+                      className="btn btn-danger btn-sm"
+                      title="Delete setting"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+

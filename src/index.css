@@ -1,0 +1,46 @@
+:root {
+  /* Color System */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-app: #f3f4f6; /* Light gray background for the whole app */
+  --bg-card: #ffffff; /* White background for cards/sidebars */
+  --text-main: #111827; /* Dark gray for headings */
+  --text-secondary: #6b7280; /* Medium gray for secondary text */
+  --border: #e5e7eb; /* Light border */
+  
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
+
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--text-main);
+  background-color: var(--bg-app);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-main);
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
