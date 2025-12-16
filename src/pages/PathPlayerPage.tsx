@@ -211,8 +211,8 @@ export const PathPlayerPage = () => {
 
             if (progressError) throw progressError;
 
-            // Navigate to chat with path context
-            navigate(`/chat/${chatData.id}?pathId=${pathId}&pathSimId=${pathSim.id}`);
+      // Navigate to public chat (no sidebar)
+      navigate(`/play-chat/${chatData.id}?pathId=${pathId}&pathSimId=${pathSim.id}`);
         } catch (error) {
             console.error('Error starting simulation:', error);
             alert('Error starting simulation');

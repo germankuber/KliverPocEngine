@@ -1,0 +1,21 @@
+.public-chat-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  padding: 0;
+}
+
+/* Override chat page styles for full width */
+.public-chat-container .chat-page {
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+  height: 100vh;
+}
+
+.public-chat-container .chat-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100%;
+}
+

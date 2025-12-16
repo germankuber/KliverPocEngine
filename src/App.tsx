@@ -8,12 +8,13 @@ import { SettingsPage } from './pages/SettingsPage';
 import { PathsPage } from './pages/PathsPage';
 import { PathEditorPage } from './pages/PathEditorPage';
 import { PathPlayerPage } from './pages/PathPlayerPage';
+import { PublicChatPage } from './pages/PublicChatPage';
 import { CharactersPage } from './pages/CharactersPage';
 import './App.css';
 
 function AppContent() {
   const location = useLocation();
-  const isPublicPath = location.pathname.startsWith('/play/');
+  const isPublicPath = location.pathname.startsWith('/play/') || location.pathname.startsWith('/play-chat/');
 
   return (
     <div className="app-container">
@@ -34,6 +35,7 @@ function AppContent() {
           <Route path="/paths/new" element={<PathEditorPage />} />
           <Route path="/paths/:pathId/edit" element={<PathEditorPage />} />
           <Route path="/play/:pathId" element={<PathPlayerPage />} />
+          <Route path="/play-chat/:id" element={<PublicChatPage />} />
         </Routes>
       </main>
     </div>
