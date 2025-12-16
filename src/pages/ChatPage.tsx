@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, StopCircle, ListChecks, X } from 'lucide-react';
+import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
@@ -33,11 +33,85 @@ export const ChatPage = () => {
   const [completionMessage, setCompletionMessage] = useState('');
   const [isPathMode, setIsPathMode] = useState(false);
   const [pathId, setPathId] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const textToSpeech = async (text: string) => {
+    if (!appSettings?.api_key) {
+      console.error('API key not available for TTS');
+      return;
+    }
+
+    try {
+      setIsSpeaking(true);
+      
+      // Stop any currently playing audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${appSettings.api_key.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini-tts',
+          input: text,
+          voice: 'alloy', // Options: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse
+          speed: 1.0,
+          response_format: 'mp3',
+          instructions: 'Speak very angry'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('TTS API error:', response.status, errorData);
+        throw new Error(`TTS API error: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      setCurrentAudio(audio);
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        console.log('✅ Audio playback finished');
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+        console.error('❌ Error playing audio');
+      };
+
+      console.log('🎤 Playing text-to-speech...');
+      await audio.play();
+    } catch (error) {
+      console.error('Error in text-to-speech:', error);
+      setIsSpeaking(false);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setIsSpeaking(false);
+    }
   };
 
   useEffect(() => {
@@ -512,6 +586,11 @@ export const ChatPage = () => {
       setMessages(finalMessages);
       saveMessages(finalMessages);
 
+      // If voice mode is enabled, play the response
+      if (voiceEnabled && fullContent) {
+        await textToSpeech(fullContent);
+      }
+
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: Message = {
@@ -551,18 +630,38 @@ export const ChatPage = () => {
           <h1><Bot className="text-primary" /> {simulationData?.name || "Simulation"}</h1>
           <p>Character: {simulationData?.character}</p>
         </div>
-        {simulationData?.rules && simulationData.rules.length > 0 && (
+        <div className="chat-header-actions">
+          {simulationData?.rules && simulationData.rules.length > 0 && (
+            <button 
+              className="rules-toggle-btn"
+              onClick={() => setShowRulesSidebar(!showRulesSidebar)}
+              title="Toggle rules progress"
+            >
+              <ListChecks size={20} />
+              <span className="rules-count-badge">
+                {Object.values(rulesTracker).filter(Boolean).length}/{Object.keys(rulesTracker).length}
+              </span>
+            </button>
+          )}
           <button 
-            className="rules-toggle-btn"
-            onClick={() => setShowRulesSidebar(!showRulesSidebar)}
-            title="Toggle rules progress"
+            className={`voice-toggle-btn ${voiceEnabled ? 'active' : ''}`}
+            onClick={() => {
+              if (isSpeaking) {
+                stopSpeaking();
+              }
+              setVoiceEnabled(!voiceEnabled);
+            }}
+            title={voiceEnabled ? 'Voice mode enabled' : 'Voice mode disabled'}
           >
-            <ListChecks size={20} />
-            <span className="rules-count-badge">
-              {Object.values(rulesTracker).filter(Boolean).length}/{Object.keys(rulesTracker).length}
-            </span>
+            {isSpeaking ? (
+              <VolumeX size={20} className="speaking-icon" />
+            ) : voiceEnabled ? (
+              <Volume2 size={20} />
+            ) : (
+              <VolumeX size={20} />
+            )}
           </button>
-        )}
+        </div>
       </div>
 
       {/* Rules Sidebar */}
@@ -646,8 +745,20 @@ export const ChatPage = () => {
                         )}
                       </div>
                     )}
-                    <div className="message-time">
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="message-footer">
+                      <span className="message-time">
+                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {msg.role === 'assistant' && msg.content && (
+                        <button
+                          className="message-voice-btn"
+                          onClick={() => textToSpeech(msg.content)}
+                          disabled={isSpeaking}
+                          title="Play this message"
+                        >
+                          <Volume2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

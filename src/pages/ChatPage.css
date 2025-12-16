@@ -15,6 +15,12 @@
   gap: 2rem;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .chat-title h1 {
   display: flex;
   align-items: center;
@@ -61,6 +67,49 @@
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* Voice Toggle Button */
+.voice-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.voice-toggle-btn:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.voice-toggle-btn.active {
+  background-color: #dcfce7;
+  color: #16a34a;
+  border-color: #16a34a;
+}
+
+.voice-toggle-btn.active:hover {
+  background-color: #bbf7d0;
+}
+
+.speaking-icon {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Rules Sidebar Overlay */
@@ -441,13 +490,43 @@
 
 .message-time {
   font-size: 0.7rem;
-  margin-top: 0.5rem;
   opacity: 0.7;
-  text-align: right;
 }
 
 .message-wrapper.user .message-time {
   color: rgba(255, 255, 255, 0.9);
+}
+
+.message-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.message-voice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+}
+
+.message-voice-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.message-voice-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .message-content {
