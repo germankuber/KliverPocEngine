@@ -16,6 +16,7 @@ type Rule = {
 type SimulationInputs = {
   name: string;
   systemPrompt: string;
+  evaluationRulePrompt: string;
   character: string;
   objective: string;
   context: string;
@@ -29,6 +30,7 @@ type Simulation = {
   name: string;
   created_at: string;
   system_prompt?: string;
+  evaluation_rule_prompt?: string;
   character?: string;
   objective?: string;
   context?: string;
@@ -60,6 +62,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
     defaultValues: {
       name: "",
       systemPrompt: "You are a helpful assistant.",
+      evaluationRulePrompt: "",
       character: "Helpful Assistant",
       objective: "Help the user with their tasks.",
       context: "",
@@ -92,6 +95,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
       if (sim) {
         setValue('name', sim.name);
         setValue('systemPrompt', sim.system_prompt || '');
+        setValue('evaluationRulePrompt', sim.evaluation_rule_prompt || '');
         setValue('character', sim.character || '');
         setValue('objective', sim.objective || '');
         setValue('context', sim.context || '');
@@ -221,6 +225,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .update({
             name: data.name,
             system_prompt: data.systemPrompt,
+            evaluation_rule_prompt: data.evaluationRulePrompt,
             character: data.character,
             objective: data.objective,
             context: data.context,
@@ -238,6 +243,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .insert({
             name: data.name,
             system_prompt: data.systemPrompt,
+            evaluation_rule_prompt: data.evaluationRulePrompt,
             character: data.character,
             objective: data.objective,
             context: data.context,
@@ -349,6 +355,18 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 className={`form-textarea ${errors.systemPrompt ? 'error' : ''}`}
               />
               {errors.systemPrompt && <span className="error-msg">{errors.systemPrompt.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="evaluationRulePrompt">Evaluation Rule Prompt <span style={{fontWeight: 'normal', color: '#9ca3af'}}>(Optional)</span></label>
+              <p className="form-helper-text">Rules and criteria for evaluating the AI's performance and responses.</p>
+              <textarea 
+                id="evaluationRulePrompt" 
+                rows={3}
+                placeholder="e.g., Evaluate if the response is accurate, helpful, and follows the defined rules..."
+                {...register("evaluationRulePrompt")}
+                className="form-textarea"
+              />
             </div>
 
             <div className="form-group">

@@ -42,6 +42,31 @@ supabase db push
 - Each simulation can be assigned a specific AI setting
 - Prevents deletion of settings that are in use by simulations
 
+### 002_add_max_interactions.sql
+
+**Purpose:** Add max_interactions column to simulations table
+
+**Changes:**
+- Adds `max_interactions` column with default value of 10
+- Sets the range between 5 and 10 interactions
+
+### 003_create_chats.sql
+
+**Purpose:** Create chats table for storing conversation history
+
+**Changes:**
+- Creates `chats` table linked to simulations
+- Stores messages array and tracks creation date
+- Enables RLS (Row Level Security)
+
+### 004_add_evaluation_rule_prompt.sql
+
+**Purpose:** Add evaluation_rule_prompt field for simulation evaluation criteria
+
+**Changes:**
+- Adds `evaluation_rule_prompt` TEXT column to `simulations` table
+- Allows defining rules and criteria for evaluating AI performance and responses
+
 ## Important Notes
 
 ⚠️ **Before Running Migrations:**
