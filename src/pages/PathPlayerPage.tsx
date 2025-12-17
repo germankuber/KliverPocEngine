@@ -154,6 +154,7 @@ export const PathPlayerPage = () => {
                     created_at,
                     simulation_id,
                     messages,
+                    analysis_result,
                     simulations(
                         name
                     )
@@ -402,12 +403,22 @@ export const PathPlayerPage = () => {
                                 <span className="history-date">{createdDate}</span>
                                 <span className="history-messages">{messageCount} messages</span>
                               </div>
-                              <button
-                                onClick={() => navigate(`/play-chat/${chat.id}?pathId=${pathId}`)}
-                                className="view-history-chat-btn"
-                              >
-                                View
-                              </button>
+                              <div className="history-item-actions">
+                                <button
+                                  onClick={() => navigate(`/play-chat/${chat.id}?pathId=${pathId}`)}
+                                  className="view-history-chat-btn"
+                                >
+                                  View
+                                </button>
+                                {chat.analysis_result && (
+                                  <button
+                                    onClick={() => navigate(`/analyses/${chat.id}`)}
+                                    className="view-analysis-btn"
+                                  >
+                                    View Analysis
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}

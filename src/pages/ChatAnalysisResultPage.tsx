@@ -111,7 +111,7 @@ export const ChatAnalysisResultPage = () => {
           <BarChart3 size={48} className="text-gray-300 mb-4" />
           <h3>Analysis not found</h3>
           <p>Return to the analyses list.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/analyses')}>Go to Analyses</button>
+          <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
         </div>
       </div>
     );
@@ -130,8 +130,8 @@ export const ChatAnalysisResultPage = () => {
 
   return (
     <div className="chat-analysis-result-page">
-      <button className="back-button" onClick={() => navigate('/analyses')}>
-        <ArrowLeft size={18} /> Volver a Análisis
+      <button className="back-button" onClick={() => navigate(-1)}>
+        <ArrowLeft size={18} /> Volver
       </button>
 
       <div className="hero-section">
