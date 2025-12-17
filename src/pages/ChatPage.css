@@ -344,6 +344,112 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* Context Modal Styles */
+.context-modal {
+  max-width: 900px;
+  width: 95%;
+  text-align: left;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.context-modal .modal-icon {
+  text-align: center;
+}
+
+.context-modal h2 {
+  text-align: center;
+}
+
+.modal-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.modal-section h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-section p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.context-modal .btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modal-buttons .btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+.keypoints-section {
+  border-left-color: #f59e0b;
+}
+
+.keypoints-section.player-keypoints {
+  border-left-color: #10b981;
+}
+
+.keypoints-explanation {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: #fff;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.keypoints-explanation strong {
+  color: var(--text-main);
+}
+
+.keypoints-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.keypoints-list li {
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+  background-color: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  transition: all 0.2s;
+}
+
+.keypoints-list li:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.player-keypoints .keypoints-list li {
+  border-left-color: #10b981;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

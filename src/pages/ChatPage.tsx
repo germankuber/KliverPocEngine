@@ -67,6 +67,8 @@ export const ChatPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [contextModalStep, setContextModalStep] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -347,6 +349,11 @@ export const ChatPage = () => {
 
       const simData = chatData.simulations;
       setSimulationData(simData);
+
+      // Show context modal when chat is loaded and has context/objective
+      if (simData?.context || simData?.objective) {
+        setShowContextModal(true);
+      }
 
       // Initialize keypoints tracker
       if ((simData.character_keypoints && Array.isArray(simData.character_keypoints)) ||
@@ -1314,6 +1321,108 @@ export const ChatPage = () => {
               >
                 Aceptar
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Context & Objective Modal */}
+        {showContextModal && (
+          <div className="completion-modal-overlay" onClick={() => {
+            setShowContextModal(false);
+            setContextModalStep(1);
+          }}>
+            <div className="completion-modal context-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-icon">📋</div>
+              
+              {contextModalStep === 1 ? (
+                <>
+                  <h2>Información de la Simulación</h2>
+                  
+                  {simulationData?.objective && (
+                    <div className="modal-section">
+                      <h3>🎯 Objetivo</h3>
+                      <p>{simulationData.objective}</p>
+                    </div>
+                  )}
+                  
+                  {simulationData?.context && (
+                    <div className="modal-section">
+                      <h3>📖 Contexto</h3>
+                      <p>{simulationData.context}</p>
+                    </div>
+                  )}
+                  
+                  {((simulationData?.character_keypoints && simulationData.character_keypoints.length > 0) ||
+                    (simulationData?.player_keypoints && simulationData.player_keypoints.length > 0)) ? (
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => setContextModalStep(2)}
+                    >
+                      Siguiente
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setShowContextModal(false);
+                        setContextModalStep(1);
+                      }}
+                    >
+                      Comenzar
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h2>Key Points de la Conversación</h2>
+                  
+                  {simulationData?.character_keypoints && simulationData.character_keypoints.length > 0 && (
+                    <div className="modal-section keypoints-section">
+                      <h3>🔍 Key Points del Personaje</h3>
+                      <p className="keypoints-explanation">
+                        <strong>Objetivo:</strong> Debes obtener esta información del personaje durante la conversación.
+                      </p>
+                      <ul className="keypoints-list">
+                        {simulationData.character_keypoints.map((kp, idx) => (
+                          <li key={idx}>{kp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {simulationData?.player_keypoints && simulationData.player_keypoints.length > 0 && (
+                    <div className="modal-section keypoints-section player-keypoints">
+                      <h3>💬 Key Points del Jugador</h3>
+                      <p className="keypoints-explanation">
+                        <strong>Objetivo:</strong> Debes comunicar esta información al personaje durante la conversación.
+                      </p>
+                      <ul className="keypoints-list">
+                        {simulationData.player_keypoints.map((kp, idx) => (
+                          <li key={idx}>{kp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  <div className="modal-buttons">
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={() => setContextModalStep(1)}
+                    >
+                      Atrás
+                    </button>
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setShowContextModal(false);
+                        setContextModalStep(1);
+                      }}
+                    >
+                      Comenzar
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
