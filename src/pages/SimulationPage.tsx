@@ -106,8 +106,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             if (error) throw error;
             setSimulations(data || []);
         } catch (error) {
-            console.error(\"Error fetching simulations:\", error);
-            toast.error(\"Error loading simulations\");
+            console.error("Error fetching simulations:", error);
+            toast.error("Error loading simulations");
         }
     };
 
