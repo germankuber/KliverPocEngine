@@ -461,7 +461,10 @@ export const ChatPage = () => {
   };
 
   const analyzeChat = async (): Promise<number | null> => {
-    if (!chatId || !simulationData || !appSettings) return null;
+    if (!chatId || !simulationData || !appSettings) {
+      console.error('❌ Missing required data for analysis', { chatId, simulationData: !!simulationData, appSettings: !!appSettings });
+      return null;
+    }
     
     try {
       console.log('📊 Starting chat analysis...');
@@ -469,16 +472,22 @@ export const ChatPage = () => {
       // Load global evaluator prompt
       const { data: promptsData, error: promptsError } = await supabase
         .from('global_prompts')
-        .select('evaluator_prompt')
+        .select('character_analysis_prompt')
         .limit(1)
         .single();
 
-      if (promptsError) throw promptsError;
-      const evaluatorPrompt = promptsData?.evaluator_prompt?.trim();
-      if (!evaluatorPrompt) {
-        console.warn('⚠️ No evaluator_prompt found, skipping analysis');
-        return;
+      if (promptsError) {
+        console.error('❌ Error loading evaluator prompt:', promptsError);
+        throw promptsError;
       }
+      
+      const evaluatorPrompt = promptsData?.character_analysis_prompt?.trim();
+      if (!evaluatorPrompt) {
+        console.warn('⚠️ No character_analysis_prompt found, skipping analysis');
+        return null;
+      }
+
+      console.log('✅ Evaluator prompt loaded, length:', evaluatorPrompt.length);
 
       // Get character description
       const characterText =
@@ -486,6 +495,8 @@ export const ChatPage = () => {
         simulationData.character ||
         simulationData.characters?.name ||
         'N/A';
+
+      console.log('📝 Character text:', characterText.substring(0, 100) + '...');
 
       // Extract user messages
       const userMessages = messages
@@ -495,30 +506,50 @@ export const ChatPage = () => {
 
       if (userMessages.length === 0) {
         console.warn('⚠️ No user messages to analyze');
-        return;
+        return null;
       }
+
+      console.log('💬 User messages count:', userMessages.length);
 
       const playerText = userMessages.join('\n\n');
       const evaluatorUserMessage = `Character:\n${characterText}\n\nPlayer:\n${playerText}`;
 
+      console.log('📤 Evaluator message length:', evaluatorUserMessage.length);
+
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
 
-      const evaluatorChat = new ChatOpenAI({
+      // Build configuration based on model type
+      const chatConfig: any = {
         apiKey: appSettings.api_key?.trim(),
         openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || 'gpt-4o',
-        ...(isReasoningModel ? {} : { temperature: 0 }),
-        modelKwargs: {
-          response_format: { type: 'json_object' }
-        },
-        // @ts-ignore
         dangerouslyAllowBrowser: true
-      });
+      };
 
+      // Only add temperature and response_format for non-reasoning models
+      if (!isReasoningModel) {
+        chatConfig.temperature = 0;
+        chatConfig.modelKwargs = {
+          response_format: { type: 'json_object' }
+        };
+      }
+
+      console.log('🤖 Model config:', { model: chatConfig.modelName, isReasoningModel, hasResponseFormat: !!chatConfig.modelKwargs });
+
+      const evaluatorChat = new ChatOpenAI(chatConfig);
+
+      console.log('🚀 Calling OpenAI API...');
+      
       const response = await evaluatorChat.invoke([
         new SystemMessage(evaluatorPrompt),
         new HumanMessage(evaluatorUserMessage)
       ]);
+
+      console.log('✅ Response received from OpenAI');
+      console.log('📥 Response content length:', String(response.content).length);
+
+      console.log('✅ Response received from OpenAI');
+      console.log('📥 Response content length:', String(response.content).length);
 
       // Parse JSON response
       const contentStr = String(response.content).trim();
@@ -527,25 +558,34 @@ export const ChatPage = () => {
       try {
         // Try direct parse
         parsed = JSON.parse(contentStr);
-      } catch {
+        console.log('✅ JSON parsed successfully');
+      } catch (e1) {
+        console.log('⚠️ Direct JSON parse failed, trying markdown extraction...');
         // Try to extract JSON from markdown code blocks
         const fenceMatch = contentStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
         const candidate = (fenceMatch?.[1] ?? contentStr).trim();
         
         try {
           parsed = JSON.parse(candidate);
-        } catch {
+          console.log('✅ JSON parsed from markdown block');
+        } catch (e2) {
+          console.log('⚠️ Markdown extraction failed, trying to find JSON block...');
           // Try to find first {...} block
           const firstBrace = candidate.indexOf('{');
           const lastBrace = candidate.lastIndexOf('}');
           if (firstBrace >= 0 && lastBrace > firstBrace) {
             const slice = candidate.slice(firstBrace, lastBrace + 1);
             parsed = JSON.parse(slice);
+            console.log('✅ JSON extracted from braces');
           } else {
+            console.error('❌ Could not find JSON in response');
+            console.error('Response content:', contentStr.substring(0, 500));
             throw new Error('Could not parse evaluator response as JSON');
           }
         }
       }
+
+      console.log('📊 Parsed analysis result:', { overall_score: parsed?.overall_score });
 
       // Save analysis result
       const { error: updateError } = await supabase
@@ -556,7 +596,10 @@ export const ChatPage = () => {
         })
         .eq('id', chatId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Error saving analysis result:', updateError);
+        throw updateError;
+      }
       
       console.log('✅ Chat analysis completed successfully');
       
@@ -564,6 +607,7 @@ export const ChatPage = () => {
       return parsed?.overall_score ?? null;
     } catch (error) {
       console.error('❌ Error analyzing chat:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
   };
