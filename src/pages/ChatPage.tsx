@@ -45,6 +45,7 @@ export const ChatPage = () => {
     evaluation_rule_prompt?: string;
     evaluator_prompt?: string;
     player_evaluator_prompt?: string;
+    player_keypoints_evaluation_prompt?: string;
     character_keypoints_evaluation_prompt?: string;
     langsmith_enabled?: boolean;
     langsmith_api_key?: string;
@@ -865,27 +866,37 @@ export const ChatPage = () => {
       timestamp: new Date()
     };
 
-    setMessages([...messages, userMessage]);
+    const tempMessages = [...messages, userMessage];
+    setMessages(tempMessages);
     setInput("");
     setIsLoading(true);
 
     // Evaluate player message if player_keypoints_evaluation_prompt is defined
-    if (globalPrompts?.player_evaluator_prompt && 
+    console.log("🔍 Checking player evaluation conditions:", {
+      hasPlayerPrompt: !!globalPrompts?.player_keypoints_evaluation_prompt,
+      hasPlayerKeypoints: !!(simulationData.player_keypoints && simulationData.player_keypoints.length > 0),
+      playerKeypointsCount: simulationData.player_keypoints?.length || 0
+    });
+    
+    if (globalPrompts?.player_keypoints_evaluation_prompt && 
         simulationData.player_keypoints && 
         simulationData.player_keypoints.length > 0) {
       console.log("🎯 Evaluating player message...");
       const playerEvaluationResult = await evaluateRules(
         input, 
         simulationData, 
-        globalPrompts.player_evaluator_prompt,
+        globalPrompts.player_keypoints_evaluation_prompt,
         'player'
       );
       
       if (playerEvaluationResult) {
         // Update the user message with evaluation results
         userMessage = { ...userMessage, ...playerEvaluationResult };
-        setMessages([...messages, userMessage]);
+        const messagesWithEvaluation = [...messages, userMessage];
+        setMessages(messagesWithEvaluation);
       }
+    } else {
+      console.log("⚠️ Skipping player evaluation - conditions not met");
     }
 
     const updatedMessages = [...messages, userMessage];
