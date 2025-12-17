@@ -195,10 +195,7 @@ export const PathPlayerPage = () => {
             return;
         }
 
-        const status = getSimulationStatus(
-            pathSim,
-            path?.path_simulations.indexOf(pathSim) || 0
-        );
+        const status = getSimulationStatus(pathSim);
 
         if (status === 'failed') {
             alert('Maximum attempts reached for this simulation');

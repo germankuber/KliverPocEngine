@@ -243,7 +243,6 @@ export const ChatAnalysisResultPage = () => {
                     m.role === 'user' && i >= (response.turn_number - 1) * 2
                   );
                   
-                  const userMsg = messages[userMsgIndex];
                   const assistantMsg = messages[userMsgIndex + 1];
                   
                   return (
