@@ -106,10 +106,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             if (error) throw error;
             setSimulations(data || []);
         } catch (error) {
-            console.error("Error fetching simulations:", error);
-            toast.error("Error loading simulations");
-        } finally {
-            setIsLoading(false);
+            console.error(\"Error fetching simulations:\", error);
+            toast.error(\"Error loading simulations\");
         }
     };
 
@@ -134,8 +132,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 setValue('context', sim.context || '');
                 setValue('maxInteractions', sim.max_interactions || 10);
                 setValue('settingId', sim.setting_id || '');
-                setValue('characterKeypoints', sim.character_keypoints || [""]);
-                setValue('playerKeypoints', sim.player_keypoints || [""]);
+                setValue('characterKeypoints', (sim.character_keypoints || [""]).map(k => ({ value: k })));
+                setValue('playerKeypoints', (sim.player_keypoints || [""]).map(k => ({ value: k })));
             }
         }
     }, [id, simulations, isNew, reset, setValue]);
@@ -285,8 +283,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
-                        character_keypoints: data.characterKeypoints.filter(k => k.trim() !== ''),
-                        player_keypoints: data.playerKeypoints.filter(k => k.trim() !== ''),
+                        character_keypoints: data.characterKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
+                        player_keypoints: data.playerKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
                         setting_id: data.settingId
                     })
                     .eq('id', id);
@@ -302,8 +300,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
-                        character_keypoints: data.characterKeypoints.filter(k => k.trim() !== ''),
-                        player_keypoints: data.playerKeypoints.filter(k => k.trim() !== ''),
+                        character_keypoints: data.characterKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
+                        player_keypoints: data.playerKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
                         setting_id: data.settingId
                     });
 
@@ -475,7 +473,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g., Our return policy is 30 days"
-                                                {...register(`characterKeypoints.${index}` as const)}
+                                                {...register(`characterKeypoints.${index}.value` as const)}
                                                 className="form-input"
                                             />
                                         </div>
@@ -493,7 +491,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             <button
                                 type="button"
                                 className="btn btn-secondary btn-sm mt-2"
-                                onClick={() => appendCharacterKeypoint("")}
+                                onClick={() => appendCharacterKeypoint({ value: "" })}
                             >
                                 <Plus size={16} /> Add Character Keypoint
                             </button>
@@ -509,7 +507,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g., My order number is #12345"
-                                                {...register(`playerKeypoints.${index}` as const)}
+                                                {...register(`playerKeypoints.${index}.value` as const)}
                                                 className="form-input"
                                             />
                                         </div>
@@ -527,7 +525,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             <button
                                 type="button"
                                 className="btn btn-secondary btn-sm mt-2"
-                                onClick={() => appendPlayerKeypoint("")}
+                                onClick={() => appendPlayerKeypoint({ value: "" })}
                             >
                                 <Plus size={16} /> Add Player Keypoint
                             </button>
