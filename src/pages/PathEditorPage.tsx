@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './PathEditorPage.css';
@@ -25,6 +26,7 @@ type PathSimulation = {
 export const PathEditorPage = () => {
     const { pathId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const isEditing = pathId !== 'new';
 
     const [isLoading, setIsLoading] = useState(isEditing);
@@ -211,6 +213,7 @@ export const PathEditorPage = () => {
                         name,
                         description,
                         is_public: isPublic,
+                        user_id: user?.id,
                     })
                     .select()
                     .single();

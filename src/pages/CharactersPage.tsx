@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 import { Plus, Trash2, Edit2, User } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -23,6 +24,7 @@ type Character = {
 export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -98,7 +100,8 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .from('characters')
           .insert({
             name: formData.name,
-            description: formData.description
+            description: formData.description,
+            user_id: user?.id
           });
 
         if (error) throw error;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 import { Play, Plus, Trash2, Edit2, Copy, BarChart2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
@@ -57,6 +58,7 @@ type Character = {
 export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [simulations, setSimulations] = useState<Simulation[]>([]);
     const [settings, setSettings] = useState<Setting[]>([]);
     const [characters, setCharacters] = useState<Character[]>([]);
@@ -221,7 +223,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
         max_interactions: sim.max_interactions,
         character_keypoints: sim.character_keypoints,
         player_keypoints: sim.player_keypoints,
-        setting_id: sim.setting_id
+        setting_id: sim.setting_id,
+        user_id: user?.id
       };
 
             const { error } = await supabase
@@ -302,7 +305,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         max_interactions: Number(data.maxInteractions),
                         character_keypoints: data.characterKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
                         player_keypoints: data.playerKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
-                        setting_id: data.settingId
+                        setting_id: data.settingId,
+                        user_id: user?.id
                     });
 
                 if (error) throw error;

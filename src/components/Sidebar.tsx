@@ -1,15 +1,27 @@
-import { Home, PlaySquare, Menu as MenuIcon, ChevronLeft, Bot, Key, MessageSquare, FolderOpen, User, BarChart3 } from 'lucide-react';
+import { Home, PlaySquare, Menu as MenuIcon, ChevronLeft, Bot, Key, MessageSquare, FolderOpen, User, BarChart3, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useAuth } from '../lib/auth';
 import './Sidebar.css';
 
 export const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const menuItems = [
     { path: '/', icon: Home, label: 'Home' },
@@ -75,20 +87,46 @@ export const Sidebar = () => {
                   </motion.span>
                 )}
               </AnimatePresence>
-              {(isActive || isHomeActive) && (
-                <motion.div 
-                  layoutId="active-indicator" 
-                  className="active-indicator"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
             </Link>
           );
         })}
       </nav>
 
       <div className="sidebar-footer">
-        {/* Optional footer content */}
+        <div className="user-info">
+          <AnimatePresence>
+            {!isCollapsed && user?.email && (
+              <motion.div
+                className="user-email"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {user.email}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <button 
+          className="logout-btn" 
+          onClick={handleSignOut}
+          title={isCollapsed ? "Sign out" : undefined}
+        >
+          <LogOut size={20} className="logout-icon" />
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                Sign Out
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
       </div>
     </motion.div>
   );
