@@ -485,34 +485,36 @@ export const ChatPage = () => {
     }
   };
 
-  const evaluateRules = async (response: string, simData: any, evaluationPrompt: string) => {
+  const evaluateRules = async (response: string, simData: any, evaluationPrompt: string, keypointType: 'character' | 'player' = 'character') => {
     try {
-      console.log("🔍 Evaluating keypoints for response...");
+      console.log(`🔍 Evaluating ${keypointType} keypoints for response...`);
 
       if (!appSettings?.api_key) {
         console.error("API Key is missing for keypoint evaluation");
         return;
       }
 
-      // Prepare keypoints data for evaluation
-      const characterKeypoints = (simData.character_keypoints || []).map((keypoint: string, index: number) => ({
-        id: `character_keypoint_${index + 1}`,
-        keypoint: keypoint,
-        type: 'character'
-      }));
+      // Prepare keypoints data for evaluation based on type
+      let keypoints: any[] = [];
       
-      const playerKeypoints = (simData.player_keypoints || []).map((keypoint: string, index: number) => ({
-        id: `player_keypoint_${index + 1}`,
-        keypoint: keypoint,
-        type: 'player'
-      }));
-      
-      const allKeypoints = [...characterKeypoints, ...playerKeypoints];
+      if (keypointType === 'character') {
+        keypoints = (simData.character_keypoints || []).map((keypoint: string, index: number) => ({
+          id: `character_keypoint_${index + 1}`,
+          keypoint: keypoint,
+          type: 'character'
+        }));
+      } else {
+        keypoints = (simData.player_keypoints || []).map((keypoint: string, index: number) => ({
+          id: `player_keypoint_${index + 1}`,
+          keypoint: keypoint,
+          type: 'player'
+        }));
+      }
 
       // Create the evaluation payload
       const evaluationPayload = {
         response: response,
-        keypoints: allKeypoints.map((k: any) => ({
+        keypoints: keypoints.map((k: any) => ({
           id: k.id,
           keypoint: k.keypoint,
           type: k.type
@@ -622,6 +624,27 @@ export const ChatPage = () => {
     saveMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
+
+    // Evaluate player message if player_keypoints_evaluation_prompt is defined
+    if (globalPrompts?.player_keypoints_evaluation_prompt && 
+        simulationData.player_keypoints && 
+        simulationData.player_keypoints.length > 0) {
+      console.log("🎯 Evaluating player message...");
+      const playerEvaluationResult = await evaluateRules(
+        input, 
+        simulationData, 
+        globalPrompts.player_keypoints_evaluation_prompt,
+        'player'
+      );
+      
+      if (playerEvaluationResult) {
+        // Update the user message with evaluation results
+        const updatedUserMessage = { ...userMessage, ...playerEvaluationResult };
+        const messagesWithEvaluation = [...messages, updatedUserMessage];
+        setMessages(messagesWithEvaluation);
+        saveMessages(messagesWithEvaluation);
+      }
+    }
 
     // Check interaction limit
     const assistantMessagesCount = updatedMessages.filter(m => m.role === 'assistant').length;
@@ -751,11 +774,17 @@ export const ChatPage = () => {
       // Once complete, update the message with full content
       let finalBotMessage = { ...botMessage, content: fullContent };
 
-      // Evaluate rules if evaluation_rule_prompt is defined
-      if (globalPrompts?.evaluation_rule_prompt && 
-          ((simulationData.character_keypoints && simulationData.character_keypoints.length > 0) ||
-           (simulationData.player_keypoints && simulationData.player_keypoints.length > 0))) {
-        const evaluationResult = await evaluateRules(fullContent, simulationData, globalPrompts.evaluation_rule_prompt);
+      // Evaluate character response if character_keypoints_evaluation_prompt is defined
+      if (globalPrompts?.character_keypoints_evaluation_prompt && 
+          simulationData.character_keypoints && 
+          simulationData.character_keypoints.length > 0) {
+        console.log("🤖 Evaluating character response...");
+        const evaluationResult = await evaluateRules(
+          fullContent, 
+          simulationData, 
+          globalPrompts.character_keypoints_evaluation_prompt,
+          'character'
+        );
         if (evaluationResult) {
           finalBotMessage = { ...finalBotMessage, ...evaluationResult };
         }
