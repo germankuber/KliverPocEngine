@@ -952,6 +952,11 @@ export const ChatPage = () => {
           ) : (
             messages.map((msg) => {
               const hasMatchedRules = msg.matchedRules && msg.matchedRules.length > 0;
+              // For player messages, only show evaluation if there are matched rules
+              const shouldShowEvaluation = msg.role === 'assistant' 
+                ? msg.matchedRules !== undefined 
+                : hasMatchedRules;
+              
               return (
                 <div key={msg.id} className={`message-wrapper ${msg.role} ${hasMatchedRules ? 'has-matched-rules' : ''}`}>
                   <div className="message-avatar">
@@ -966,12 +971,12 @@ export const ChatPage = () => {
                         </span>
                       )}
                     </div>
-                    {msg.matchedRules !== undefined && (
+                    {shouldShowEvaluation && (
                       <div className="rules-evaluation-compact">
-                        {msg.matchedRules.length > 0 ? (
+                        {msg.matchedRules!.length > 0 ? (
                           <div className="rules-matched-compact">
                             <span className="rules-icon">✅</span>
-                            <span className="rules-text">{msg.matchedRules.join(', ')}</span>
+                            <span className="rules-text">{msg.matchedRules!.join(', ')}</span>
                           </div>
                         ) : (
                           <div className="rules-not-matched-compact">
