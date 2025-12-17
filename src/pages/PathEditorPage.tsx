@@ -50,7 +50,8 @@ export const PathEditorPage = () => {
         .select(`
           id,
           name,
-          characters(id, name, description)
+          character_id,
+          characters!character_id(id, name, description)
         `)
         .order('name');
 
@@ -64,7 +65,7 @@ export const PathEditorPage = () => {
                     name: sim.name,
                     characters: Array.isArray(sim.characters) && sim.characters.length > 0 
                         ? sim.characters[0] 
-                        : undefined
+                        : (sim.characters || undefined)
                 };
             });
             console.log('Mapped simulations:', mappedSims);
@@ -91,10 +92,11 @@ export const PathEditorPage = () => {
             simulation_id,
             order_index,
             max_attempts,
-            simulations(
+            simulations!simulation_id(
               id,
               name,
-              characters(id, name, description)
+              character_id,
+              characters!character_id(id, name, description)
             )
           `)
                     .eq('path_id', pathId)
@@ -103,12 +105,21 @@ export const PathEditorPage = () => {
                 if (pathSimsError) throw pathSimsError;
 
                 setPathSimulations(
-                    (pathSims || []).map(ps => ({
-                        simulation_id: ps.simulation_id,
-                        order_index: ps.order_index,
-                        max_attempts: ps.max_attempts,
-                        simulation: ps.simulations as any,
-                    }))
+                    (pathSims || []).map(ps => {
+                        const sim = ps.simulations as any;
+                        return {
+                            simulation_id: ps.simulation_id,
+                            order_index: ps.order_index,
+                            max_attempts: ps.max_attempts,
+                            simulation: {
+                                id: sim.id,
+                                name: sim.name,
+                                characters: Array.isArray(sim.characters) && sim.characters.length > 0
+                                    ? sim.characters[0]
+                                    : (sim.characters || undefined)
+                            }
+                        };
+                    })
                 );
             }
         } catch (error) {
