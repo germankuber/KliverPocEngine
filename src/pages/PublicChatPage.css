@@ -13,6 +13,7 @@
   width: 100% !important;
   margin: 0 !important;
   padding: 1rem 2rem !important;
+  padding-right: 370px !important; /* Keep space for the sidebar */
   height: 100vh;
   box-sizing: border-box;
 }
