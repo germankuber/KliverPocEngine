@@ -169,7 +169,7 @@ export const PathPlayerPage = () => {
         }
     };
 
-    const getSimulationStatus = (pathSim: PathSimulation, index: number) => {
+    const getSimulationStatus = (pathSim: PathSimulation) => {
         const prog = progress[pathSim.simulation_id];
 
         if (prog?.completed) {
@@ -327,7 +327,7 @@ export const PathPlayerPage = () => {
 
             <div className="simulations-track">
                 {path.path_simulations.map((pathSim, index) => {
-                    const status = getSimulationStatus(pathSim, index);
+                    const status = getSimulationStatus(pathSim);
                     const prog = progress[pathSim.simulation_id];
                     const attemptsLeft = pathSim.max_attempts - (prog?.attempts_used || 0);
                     const simulationChats = userChats.filter(chat => chat.simulation_id === pathSim.simulation_id);
