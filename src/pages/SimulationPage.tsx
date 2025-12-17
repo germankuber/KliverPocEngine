@@ -11,6 +11,7 @@ import './SimulationPage.css';
 type SimulationInputs = {
     name: string;
     characterId: string;
+    description: string;
     objective: string;
     context: string;
     maxInteractions: number;
@@ -25,6 +26,7 @@ type Simulation = {
     created_at: string;
     character?: string; // Legacy field
     character_id?: string;
+    description?: string;
     objective?: string;
     context?: string;
     max_interactions?: number;
@@ -73,6 +75,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
         defaultValues: {
             name: "",
             characterId: "",
+            description: "",
             objective: "Help the user with their tasks.",
             context: "",
             maxInteractions: 10,
@@ -130,6 +133,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             if (sim) {
                 setValue('name', sim.name);
                 setValue('characterId', sim.character_id || '');
+                setValue('description', sim.description || '');
                 setValue('objective', sim.objective || '');
                 setValue('context', sim.context || '');
                 setValue('maxInteractions', sim.max_interactions || 10);
@@ -218,6 +222,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
       const clonedData = {
         name: `${sim.name} (Copy)`,
         character_id: sim.character_id,
+        description: sim.description,
         objective: sim.objective,
         context: sim.context,
         max_interactions: sim.max_interactions,
@@ -283,6 +288,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                     .update({
                         name: data.name,
                         character_id: data.characterId,
+                        description: data.description,
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
@@ -301,6 +307,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                     .insert({
                         name: data.name,
                         character_id: data.characterId,
+                        description: data.description,
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
@@ -378,6 +385,19 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                                 className={`form-input ${errors.name ? 'error' : ''}`}
                             />
                             {errors.name && <span className="error-msg">{errors.name.message}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="description">Description</label>
+                            <p className="form-helper-text">Brief description shown to the player at the start of the chat.</p>
+                            <textarea
+                                id="description"
+                                rows={3}
+                                placeholder="e.g., You are a customer who has been experiencing issues with our product. Try to get a resolution from our support team..."
+                                {...register("description", { required: "Description is required" })}
+                                className={`form-textarea ${errors.description ? 'error' : ''}`}
+                            />
+                            {errors.description && <span className="error-msg">{errors.description.message}</span>}
                         </div>
 
                         <div className="form-group">

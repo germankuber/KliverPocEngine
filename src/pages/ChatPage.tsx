@@ -26,6 +26,7 @@ export const ChatPage = () => {
   const [simulationData, setSimulationData] = useState<{
     id?: string;
     name?: string;
+    description?: string;
     objective?: string;
     context?: string;
     character?: string;
@@ -351,9 +352,9 @@ export const ChatPage = () => {
       const simData = chatData.simulations;
       setSimulationData(simData);
 
-      // Show context modal only when chat is loaded, has context/objective, and has NO messages yet
+      // Show context modal only when chat is loaded, has description, and has NO messages yet
       const hasMessages = chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0;
-      if ((simData?.context || simData?.objective) && !hasMessages) {
+      if (simData?.description && !hasMessages) {
         setShowContextModal(true);
       }
 
@@ -1363,17 +1364,10 @@ export const ChatPage = () => {
                 <>
                   <h2>Información de la Simulación</h2>
                   
-                  {simulationData?.objective && (
+                  {simulationData?.description && (
                     <div className="modal-section">
-                      <h3>🎯 Objetivo</h3>
-                      <p>{simulationData.objective}</p>
-                    </div>
-                  )}
-                  
-                  {simulationData?.context && (
-                    <div className="modal-section">
-                      <h3>📖 Contexto</h3>
-                      <p>{simulationData.context}</p>
+                      <h3>📝 Descripción</h3>
+                      <p>{simulationData.description}</p>
                     </div>
                   )}
                   
