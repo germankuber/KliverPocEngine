@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MessageSquare, Calendar, ArrowRight, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { MessageSquare, Calendar, ArrowRight, Trash2, BarChart2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ChatOpenAI } from '@langchain/openai';
@@ -43,6 +43,7 @@ type EvaluationJson = {
 };
 
 export const ChatListPage = () => {
+  const navigate = useNavigate();
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
@@ -265,12 +266,17 @@ export const ChatListPage = () => {
                   {new Date(chat.created_at).toLocaleDateString()}
                 </span>
               </div>
-              
               <div className="chat-card-body">
                 <p><strong>Character:</strong> {chat.simulations?.character || 'N/A'}</p>
                 <p className="message-count">
                   {Array.isArray(chat.messages) ? chat.messages.length : 0} messages
                 </p>
+                {chat.analysis_result && chat.analysis_result.overall_score !== undefined && (
+                  <p className="analysis-score" style={{ marginTop: '0.5rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <BarChart2 size={16} />
+                    <strong>Score:</strong> {chat.analysis_result.overall_score}/100
+                  </p>
+                )}
               </div>
 
               <div className="chat-card-footer">
@@ -278,6 +284,19 @@ export const ChatListPage = () => {
                   {new Date(chat.created_at).toLocaleDateString()}
                 </span>
                 <div className="chat-footer-actions">
+                  {chat.analysis_result && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        navigate(`/analyses/${chat.id}`);
+                      }}
+                      title="View Analysis"
+                    >
+                      <BarChart2 size={16} /> Ver Análisis
+                    </button>
+                  )}
                   {chat.status === 'completed' && (
                     <button
                       className="btn btn-secondary btn-sm"

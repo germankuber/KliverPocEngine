@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Play, Plus, Trash2, Edit2, Copy } from 'lucide-react';
+import { Play, Plus, Trash2, Edit2, Copy, BarChart2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
@@ -39,6 +39,11 @@ type Simulation = {
         name: string;
         description: string;
     };
+    chats?: {
+        id: string;
+        analysis_result: any;
+        created_at: string;
+    }[];
 };
 
 type Setting = {
@@ -86,6 +91,27 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
         name: "rules"
     });
 
+    const fetchData = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('simulations')
+                .select(`
+          *,
+          characters(id, name, description),
+          chats(id, analysis_result, created_at)
+        `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setSimulations(data || []);
+        } catch (error) {
+            console.error("Error fetching simulations:", error);
+            toast.error("Error loading simulations");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchData();
         fetchSettings();
@@ -113,28 +139,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 }
             }
         }
-    }, [id, isNew, simulations, setValue, replace, reset]);
-
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('simulations')
-                .select(`
-          *,
-          characters(id, name, description)
-        `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setSimulations(data || []);
-        } catch (error) {
-            console.error("Error fetching simulations:", error);
-            toast.error("Error loading simulations");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    }, [id, simulations, isNew, reset, setValue, replace]);
 
     const fetchSettings = async () => {
         try {
@@ -522,86 +527,98 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             {!showForm && (
                 <div className="simulations-list-section">
                     <h2>Saved Scenarios</h2>
-                    {isLoading ? (
-                        <LoadingSpinner message="Loading simulations..." />
-                    ) : simulations.length === 0 ? (
-                        <p className="empty-text">No simulations created yet. Create your first scenario to get started.</p>
-                    ) : (
-                        <div className="simulations-grid">
-                            {simulations.map(sim => {
-                                const setting = settings.find(s => s.id === sim.setting_id);
-                                return (
-                                    <div key={sim.id} className="simulation-card">
-                                        <div className="sim-card-header">
-                                            <h3>{sim.name}</h3>
-                                            {setting && (
-                                                <span className="sim-model-badge">{setting.model}</span>
-                                            )}
-                                        </div>
-                                        <div className="sim-card-body">
-                                            <p>
-                                                <strong>Character:</strong>
-                                                <span className="truncate-inline">{sim.characters?.name || 'N/A'}</span>
+                    <div className="simulations-grid">
+                        {simulations.map(sim => {
+                            const setting = settings.find(s => s.id === sim.setting_id);
+                            const analyzedChats = sim.chats?.filter(c => c.analysis_result) || [];
+                            analyzedChats.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                            const latestAnalysis = analyzedChats[0];
+
+                            return (
+                                <div key={sim.id} className="simulation-card">
+                                    <div className="sim-card-header">
+                                        <h3>{sim.name}</h3>
+                                        {setting && (
+                                            <span className="sim-model-badge">{setting.model}</span>
+                                        )}
+                                    </div>
+                                    <div className="sim-card-body">
+                                        <p>
+                                            <strong>Character:</strong> {sim.characters?.name || 'N/A'}
+                                        </p>
+                                        <p>
+                                            <strong>Max Interactions:</strong>
+                                            <span>{sim.max_interactions || 10}</span>
+                                        </p>
+                                        {sim.rules && sim.rules.length > 0 && (
+                                            <p className="rules-count">
+                                                <strong>Rules:</strong>
+                                                <span>{sim.rules.length} defined</span>
                                             </p>
-                                            <p>
-                                                <strong>Objective:</strong>
-                                                <span className="truncate-inline">{sim.objective || 'N/A'}</span>
-                                            </p>
-                                            <p>
-                                                <strong>Max Interactions:</strong>
-                                                <span>{sim.max_interactions || 10}</span>
-                                            </p>
-                                            {sim.rules && sim.rules.length > 0 && (
-                                                <p className="rules-count">
-                                                    <strong>Rules:</strong>
-                                                    <span>{sim.rules.length} defined</span>
+                                        )}
+                                        {latestAnalysis && latestAnalysis.analysis_result?.overall_score !== undefined && (
+                                            <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <p style={{ color: 'var(--primary)', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <BarChart2 size={16} />
+                                                    Score: {latestAnalysis.analysis_result.overall_score}/100
                                                 </p>
-                                            )}
-                                        </div>
-                                        <div className="sim-card-footer">
-                                            <span className="sim-date">
-                                                {new Date(sim.created_at).toLocaleDateString()}
-                                            </span>
-                                            <div className="sim-actions">
                                                 <button
-                                                    onClick={() => handleRun(sim.id)}
-                                                    className="btn btn-primary btn-sm"
-                                                    disabled={!!runningSimId}
+                                                    className="btn btn-secondary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/analyses/${latestAnalysis.id}`);
+                                                    }}
+                                                    title="View Latest Analysis"
+                                                    style={{ padding: '2px 8px', fontSize: '0.75rem', height: 'auto' }}
                                                 >
-                                                    {runningSimId === sim.id ? (
-                                                        <span className="spinner-small"></span>
-                                                    ) : (
-                                                        <Play size={16} />
-                                                    )}
-                                                    {runningSimId === sim.id ? 'Starting...' : 'Run'}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(sim)}
-                                                    className="btn btn-secondary btn-sm"
-                                                >
-                                                    <Edit2 size={16} /> Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleClone(sim)}
-                                                    className="btn btn-secondary btn-sm btn-icon-only"
-                                                    title="Clone simulation"
-                                                >
-                                                    <Copy size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteClick(sim.id)}
-                                                    className="btn btn-danger btn-sm btn-icon-only"
-                                                    title="Delete simulation"
-                                                >
-                                                    <Trash2 size={16} />
+                                                    Ver Análisis
                                                 </button>
                                             </div>
+                                        )}
+                                    </div>
+                                    <div className="sim-card-footer">
+                                        <span className="sim-date">
+                                            {new Date(sim.created_at).toLocaleDateString()}
+                                        </span>
+                                        <div className="sim-actions">
+                                            <button
+                                                onClick={() => handleRun(sim.id)}
+                                                className="btn btn-primary btn-sm"
+                                                disabled={!!runningSimId}
+                                            >
+                                                {runningSimId === sim.id ? (
+                                                    <span className="spinner-small"></span>
+                                                ) : (
+                                                    <Play size={16} />
+                                                )}
+                                                {runningSimId === sim.id ? 'Starting...' : 'Run'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(sim)}
+                                                className="btn btn-secondary btn-sm"
+                                            >
+                                                <Edit2 size={16} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleClone(sim)}
+                                                className="btn btn-secondary btn-sm btn-icon-only"
+                                                title="Clone simulation"
+                                            >
+                                                <Copy size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteClick(sim.id)}
+                                                className="btn btn-danger btn-sm btn-icon-only"
+                                                title="Delete simulation"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </div>
