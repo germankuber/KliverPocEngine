@@ -27,7 +27,7 @@ export const ChatPage = () => {
   const [appSettings, setAppSettings] = useState<any>(null);
   const [globalPrompts, setGlobalPrompts] = useState<any>(null);
   const [rulesTracker, setRulesTracker] = useState<{[key: string]: boolean}>({});
-  const [showRulesSidebar, setShowRulesSidebar] = useState(false);
+  const [showRulesSidebar, setShowRulesSidebar] = useState(true);
   const [chatStatus, setChatStatus] = useState<'active' | 'completed' | 'failed'>('active');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionMessage, setCompletionMessage] = useState('');
@@ -735,10 +735,6 @@ export const ChatPage = () => {
       if (characterKeypoints && !systemMessageContent.includes(characterKeypoints)) {
         systemMessageContent += `\n\nCharacter Keypoints:\n${characterKeypoints}`;
       }
-      if (playerKeypoints && !systemMessageContent.includes(playerKeypoints)) {
-        systemMessageContent += `\n\nPlayer Keypoints:\n${playerKeypoints}`;
-      }
-
       const history = [
         new SystemMessage(systemMessageContent),
         ...updatedMessages.map(m => m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content))
