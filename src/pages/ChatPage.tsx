@@ -708,10 +708,6 @@ export const ChatPage = () => {
       const characterKeypoints = simulationData.character_keypoints && Array.isArray(simulationData.character_keypoints)
         ? simulationData.character_keypoints.map((k: string, index: number) => `${index + 1}. ${k}`).join("\n")
         : "";
-      
-      const playerKeypoints = simulationData.player_keypoints && Array.isArray(simulationData.player_keypoints)
-        ? simulationData.player_keypoints.map((k: string, index: number) => `${index + 1}. ${k}`).join("\n")
-        : "";
 
       // Use global prompt
       let systemMessageContent = globalPrompts?.system_prompt || "You are a helpful assistant.";

@@ -5,7 +5,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import './SimulationPage.css';
 
 type SimulationInputs = {
@@ -14,8 +13,8 @@ type SimulationInputs = {
     objective: string;
     context: string;
     maxInteractions: number;
-    characterKeypoints: string[];
-    playerKeypoints: string[];
+    characterKeypoints: { value: string }[];
+    playerKeypoints: { value: string }[];
     settingId: string;
 };
 
@@ -61,7 +60,6 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
     const [simulations, setSimulations] = useState<Simulation[]>([]);
     const [settings, setSettings] = useState<Setting[]>([]);
     const [characters, setCharacters] = useState<Character[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [simulationToDelete, setSimulationToDelete] = useState<string | null>(null);
@@ -76,8 +74,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             objective: "Help the user with their tasks.",
             context: "",
             maxInteractions: 10,
-            characterKeypoints: [""],
-            playerKeypoints: [""],
+            characterKeypoints: [{ value: "" }],
+            playerKeypoints: [{ value: "" }],
             settingId: ""
         }
     });
