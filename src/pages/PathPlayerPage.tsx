@@ -49,7 +49,7 @@ export const PathPlayerPage = () => {
     const [showIdentifierPrompt, setShowIdentifierPrompt] = useState(false);
     const [selectedSimulation, setSelectedSimulation] = useState<PathSimulation | null>(null);
     const [userChats, setUserChats] = useState<any[]>([]);
-    const [showHistory, setShowHistory] = useState(false);
+    const [expandedHistory, setExpandedHistory] = useState<{ [key: string]: boolean }>({});
 
     useEffect(() => {
         loadPath();
@@ -309,12 +309,6 @@ export const PathPlayerPage = () => {
                     <div className="user-info">
                         Playing as: <strong>{userIdentifier}</strong>
                         <button
-                            onClick={() => setShowHistory(!showHistory)}
-                            className="history-btn"
-                        >
-                            📝 History ({userChats.length})
-                        </button>
-                        <button
                             onClick={() => {
                                 localStorage.removeItem('path_user_identifier');
                                 window.location.reload();
@@ -328,40 +322,13 @@ export const PathPlayerPage = () => {
                 )}
             </div>
 
-            {showHistory && userChats.length > 0 && (
-                <div className="chat-history-section">
-                    <h2>Your Chat History</h2>
-                    <div className="chat-history-list">
-                        {userChats.map((chat) => {
-                            const messageCount = Array.isArray(chat.messages) ? chat.messages.length : 0;
-                            const createdDate = new Date(chat.created_at).toLocaleString();
-                            
-                            return (
-                                <div key={chat.id} className="chat-history-item">
-                                    <div className="chat-history-info">
-                                        <h4>{chat.simulations?.name || 'Unknown Simulation'}</h4>
-                                        <p className="chat-history-meta">
-                                            {createdDate} · {messageCount} messages
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => navigate(`/play-chat/${chat.id}?pathId=${pathId}`)}
-                                        className="view-chat-btn"
-                                    >
-                                        View Chat
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
             <div className="simulations-track">
                 {path.path_simulations.map((pathSim, index) => {
                     const status = getSimulationStatus(pathSim, index);
                     const prog = progress[pathSim.simulation_id];
                     const attemptsLeft = pathSim.max_attempts - (prog?.attempts_used || 0);
+                    const simulationChats = userChats.filter(chat => chat.simulation_id === pathSim.simulation_id);
+                    const isHistoryExpanded = expandedHistory[pathSim.simulation_id] || false;
 
                     return (
                         <div key={pathSim.id} className={`simulation-card ${status}`}>
@@ -409,6 +376,44 @@ export const PathPlayerPage = () => {
                     <Play size={18} />
                     {status === 'completed' ? 'Play Again' : status === 'retry' ? 'Retry' : 'Start Simulation'}
                   </button>
+                )}
+
+                {simulationChats.length > 0 && userIdentifier && (
+                  <div className="simulation-history">
+                    <button
+                      onClick={() => setExpandedHistory(prev => ({
+                        ...prev,
+                        [pathSim.simulation_id]: !prev[pathSim.simulation_id]
+                      }))}
+                      className="toggle-history-btn"
+                    >
+                      {isHistoryExpanded ? '▼' : '▶'} History ({simulationChats.length})
+                    </button>
+                    
+                    {isHistoryExpanded && (
+                      <div className="history-list">
+                        {simulationChats.map((chat) => {
+                          const messageCount = Array.isArray(chat.messages) ? chat.messages.length : 0;
+                          const createdDate = new Date(chat.created_at).toLocaleString();
+                          
+                          return (
+                            <div key={chat.id} className="history-item">
+                              <div className="history-item-info">
+                                <span className="history-date">{createdDate}</span>
+                                <span className="history-messages">{messageCount} messages</span>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/play-chat/${chat.id}?pathId=${pathId}`)}
+                                className="view-history-chat-btn"
+                              >
+                                View
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
                             </div>
                         </div>
