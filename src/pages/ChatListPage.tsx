@@ -307,9 +307,16 @@ export const ChatListPage = () => {
                       {isAnalyzing[chat.id] ? 'Analizando…' : 'Analizar'}
                     </button>
                   )}
-                  <div className="btn btn-primary btn-sm">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    title="Continue chat"
+                  >
                     <ArrowRight size={16} /> Continue
-                  </div>
+                  </button>
                   <button 
                     className="btn btn-danger btn-sm btn-icon-only"
                     onClick={(e) => handleDeleteClick(e, chat.id)}

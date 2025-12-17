@@ -288,7 +288,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         max_interactions: Number(data.maxInteractions),
                         character_keypoints: data.characterKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
                         player_keypoints: data.playerKeypoints.map(k => k.value).filter(v => v.trim() !== ''),
-                        setting_id: data.settingId
+                        setting_id: data.settingId,
+                        user_id: user?.id
                     })
                     .eq('id', id);
 

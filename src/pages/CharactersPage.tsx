@@ -88,7 +88,8 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .update({
             name: formData.name,
             description: formData.description,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            user_id: user?.id
           })
           .eq('id', id);
 

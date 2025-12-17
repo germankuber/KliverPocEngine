@@ -193,6 +193,7 @@ export const PathEditorPage = () => {
                         description,
                         is_public: isPublic,
                         updated_at: new Date().toISOString(),
+                        user_id: user?.id,
                     })
                     .eq('id', pathId);
 
