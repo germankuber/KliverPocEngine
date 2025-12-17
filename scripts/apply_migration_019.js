@@ -19,14 +19,12 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function applyMigration() {
-  console.log('🚀 Starting migration 019...');
 
   try {
     // Read the migration file
     const migrationPath = path.join(__dirname, '..', 'migrations', '019_add_description_to_simulations.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
 
-    console.log('📄 Applying migration SQL...');
     const { error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
 
     if (error) {

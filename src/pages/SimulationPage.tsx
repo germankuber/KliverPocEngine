@@ -256,9 +256,13 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
         setRunningSimId(simId);
 
         try {
+            // For authenticated users running their own simulations
+            // We don't use user_id in chats table - it's tracked via simulation ownership
             const { data, error } = await supabase
                 .from('chats')
-                .insert({ simulation_id: simId })
+                .insert({ 
+                    simulation_id: simId
+                })
                 .select()
                 .single();
 
@@ -387,13 +391,34 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             {errors.name && <span className="error-msg">{errors.name.message}</span>}
                         </div>
 
+                        <div className="info-box">
+                            <h4>DESCRIPTION</h4>
+                            <ul>
+                                <li>Este campo es lo que el jugador verá al iniciar la simulación para entender cuál es su rol en el juego:</li>
+                                <li>Describe de forma clara y directa:
+                                    <ul>
+                                        <li><strong>Quién es el jugador</strong> en esta simulación (rol que debe interpretar)</li>
+                                        <li><strong>Qué situación está viviendo</strong> (el escenario actual)</li>
+                                        <li><strong>Qué debe intentar lograr</strong> en la conversación</li>
+                                    </ul>
+                                </li>
+                                <li>Ejemplos:
+                                    <ul>
+                                        <li>"Eres un cliente frustrado cuyo teléfono dejó de cargar hace 3 días. Ya probaste 2 cargadores diferentes y necesitas una solución urgente porque tienes una reunión importante el lunes."</li>
+                                        <li>"Eres un usuario nuevo de nuestra plataforma que no logra configurar su cuenta. Necesitas ayuda para conectar tu base de datos antes de tu presentación de mañana."</li>
+                                    </ul>
+                                </li>
+                                <li>Esta descripción reemplaza los campos Context y Objective en la vista del jugador, pero esos campos seguirán siendo usados internamente por la IA.</li>
+                            </ul>
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="description">Description</label>
-                            <p className="form-helper-text">Brief description shown to the player at the start of the chat.</p>
+                            <p className="form-helper-text">Brief description shown to the player at the start of the chat to understand their role.</p>
                             <textarea
                                 id="description"
                                 rows={3}
-                                placeholder="e.g., You are a customer who has been experiencing issues with our product. Try to get a resolution from our support team..."
+                                placeholder="e.g., You are a customer who has been experiencing issues with our product for 3 days. Try to get a resolution from our support team..."
                                 {...register("description", { required: "Description is required" })}
                                 className={`form-textarea ${errors.description ? 'error' : ''}`}
                             />
