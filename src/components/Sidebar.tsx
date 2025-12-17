@@ -10,7 +10,7 @@ export const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -30,7 +30,7 @@ export const Sidebar = () => {
     { path: '/paths', icon: FolderOpen, label: 'Paths' },
     { path: '/chats', icon: MessageSquare, label: 'History' },
     { path: '/analyses', icon: BarChart3, label: 'Analyses' },
-    { path: '/settings', icon: Key, label: 'AI Settings' },
+    ...(isAdmin ? [{ path: '/settings', icon: Key, label: 'AI Settings' }] : []),
   ];
 
   return (

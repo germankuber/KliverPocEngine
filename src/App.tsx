@@ -15,6 +15,7 @@ import { PublicChatPage } from './pages/PublicChatPage';
 import { CharactersPage } from './pages/CharactersPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
+import { LogoutPage } from './pages/LogoutPage';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import './App.css';
 
@@ -33,18 +34,42 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Admin Only Route component
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner message="Loading..." />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   const location = useLocation();
   const { user, loading } = useAuth();
+  
+  console.log('AppContent: pathname =', location.pathname, 'user =', user?.email, 'loading =', loading);
+  
   const isPublicPath = location.pathname.startsWith('/play/') || location.pathname.startsWith('/play-chat/');
-  const isAuthPath = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPath = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/logout';
 
-  // Redirect to home if logged in user tries to access auth pages
-  if (user && isAuthPath) {
+  // Redirect to home if logged in user tries to access login/signup pages
+  if (user && (location.pathname === '/login' || location.pathname === '/signup')) {
+    console.log('AppContent: Redirecting logged-in user from auth page to home');
     return <Navigate to="/" replace />;
   }
 
   if (loading) {
+    console.log('AppContent: Still loading auth state...');
     return <LoadingSpinner message="Loading..." />;
   }
 
@@ -55,6 +80,7 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/logout" element={<LogoutPage />} />
           <Route path="/play/:pathId" element={<PathPlayerPage />} />
           <Route path="/play-chat/:id" element={<PublicChatPage />} />
           
@@ -70,10 +96,12 @@ function AppContent() {
           <Route path="/characters/new" element={<ProtectedRoute><CharactersPage isNew /></ProtectedRoute>} />
           <Route path="/characters/:id" element={<ProtectedRoute><CharactersPage /></ProtectedRoute>} />
           <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/paths" element={<ProtectedRoute><PathsPage /></ProtectedRoute>} />
           <Route path="/paths/new" element={<ProtectedRoute><PathEditorPage /></ProtectedRoute>} />
           <Route path="/paths/:pathId/edit" element={<ProtectedRoute><PathEditorPage /></ProtectedRoute>} />
+          
+          {/* Admin only routes */}
+          <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
         </Routes>
       </main>
     </div>
