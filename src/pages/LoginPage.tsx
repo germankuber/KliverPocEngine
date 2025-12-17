@@ -25,9 +25,10 @@ export const LoginPage = () => {
       await signIn(email, password);
       toast.success('Welcome back!');
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth error:', error);
-      toast.error(error.message || 'Invalid login credentials');
+      const errorMessage = error instanceof Error ? error.message : 'Invalid login credentials';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

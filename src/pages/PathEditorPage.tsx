@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -38,11 +38,7 @@ export const PathEditorPage = () => {
     const [availableSimulations, setAvailableSimulations] = useState<Simulation[]>([]);
     const [showSimulationPicker, setShowSimulationPicker] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, [pathId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
       // Load available simulations
       const { data: sims, error: simsError } = await supabase
@@ -58,7 +54,11 @@ export const PathEditorPage = () => {
             if (simsError) throw simsError;
             console.log('Raw simulations data:', sims);
             // Map to handle the characters array from Supabase (returns array, we need single object)
-            const mappedSims = (sims || []).map((sim: any) => {
+            const mappedSims = (sims || []).map((sim: {
+                id: string;
+                name: string;
+                characters: { id: string; name: string; description: string }[] | { id: string; name: string; description: string };
+            }) => {
                 console.log('Simulation:', sim.name, 'Characters:', sim.characters);
                 return {
                     id: sim.id,
@@ -106,7 +106,11 @@ export const PathEditorPage = () => {
 
                 setPathSimulations(
                     (pathSims || []).map(ps => {
-                        const sim = ps.simulations as any;
+                        const sim = ps.simulations as {
+                            id: string;
+                            name: string;
+                            characters: { id: string; name: string; description: string }[] | { id: string; name: string; description: string };
+                        };
                         return {
                             simulation_id: ps.simulation_id,
                             order_index: ps.order_index,
@@ -128,7 +132,11 @@ export const PathEditorPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isEditing, pathId]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleAddSimulation = (simulation: Simulation) => {
         const exists = pathSimulations.some(ps => ps.simulation_id === simulation.id);

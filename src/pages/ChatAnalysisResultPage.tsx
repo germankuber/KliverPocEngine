@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Calendar } from 'lucide-react';
@@ -30,12 +30,17 @@ type EvaluationJson = {
   improvement_areas: string[];
 };
 
+type Message = {
+  role: string;
+  content: string;
+};
+
 type ChatRow = {
   id: string;
   created_at: string;
   analysis_updated_at?: string | null;
-  analysis_result?: any;
-  messages?: any[];
+  analysis_result?: EvaluationJson | string;
+  messages?: Message[];
   simulations: {
     name: string;
     character: string;
@@ -49,12 +54,7 @@ export const ChatAnalysisResultPage = () => {
   const [row, setRow] = useState<ChatRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!id) return;
-    fetchRow(id);
-  }, [id]);
-
-  const fetchRow = async (chatId: string) => {
+  const fetchRow = useCallback(async (chatId: string) => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
@@ -74,14 +74,19 @@ export const ChatAnalysisResultPage = () => {
         .single();
 
       if (error) throw error;
-      setRow(data as any);
+      setRow(data as ChatRow);
     } catch (error) {
       console.error('Error loading analysis:', error);
       navigate('/analyses');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetchRow(id);
+  }, [id, fetchRow]);
 
   const analysis: EvaluationJson | null = useMemo(() => {
     const raw = row?.analysis_result;
@@ -239,7 +244,7 @@ export const ChatAnalysisResultPage = () => {
                 {analysis.player_responses_analysis.map((response, idx) => {
                   // Find messages around this turn
                   const messages = Array.isArray(row.messages) ? row.messages : [];
-                  const userMsgIndex = messages.findIndex((m: any, i: number) => 
+                  const userMsgIndex = messages.findIndex((m: Message, i: number) => 
                     m.role === 'user' && i >= (response.turn_number - 1) * 2
                   );
                   

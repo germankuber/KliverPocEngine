@@ -5,11 +5,18 @@ import { Link } from 'react-router-dom';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './ChatAnalysesPage.css';
 
+type AnalysisResult = {
+  overall_score?: number;
+  skills?: unknown[];
+  strengths?: unknown[];
+  improvement_areas?: unknown[];
+};
+
 type ChatAnalysisRow = {
   id: string;
   created_at: string;
   analysis_updated_at?: string | null;
-  analysis_result?: any;
+  analysis_result?: AnalysisResult;
   simulations: {
     name: string;
     character: string;
@@ -43,7 +50,7 @@ export const ChatAnalysesPage = () => {
         .order('analysis_updated_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      setRows((data as any[]) || []);
+      setRows((data as ChatAnalysisRow[]) || []);
     } catch (error) {
       console.error('Error fetching analyses:', error);
     } finally {
@@ -51,7 +58,7 @@ export const ChatAnalysesPage = () => {
     }
   };
 
-  const getOverallScore = (analysis: any): number | null => {
+  const getOverallScore = (analysis: AnalysisResult | string | null | undefined): number | null => {
     if (!analysis) return null;
     if (typeof analysis === 'string') {
       try {
@@ -64,7 +71,7 @@ export const ChatAnalysesPage = () => {
     return typeof analysis?.overall_score === 'number' ? analysis.overall_score : null;
   };
 
-  const getCounts = (analysis: any) => {
+  const getCounts = (analysis: AnalysisResult | string | null | undefined) => {
     const obj = typeof analysis === 'string' ? (() => {
       try { return JSON.parse(analysis); } catch { return null; }
     })() : analysis;

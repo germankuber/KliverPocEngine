@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+/* eslint-disable react-refresh/only-export-components */
+
 type UserRole = 'admin' | 'user';
 
 type AuthContextType = {
@@ -35,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('user_id', userId)
         .single();
       
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as Awaited<ReturnType<typeof fetchPromise>>;
       
       console.log('auth.tsx: fetchUserRole response - data =', data, 'error =', error);
       

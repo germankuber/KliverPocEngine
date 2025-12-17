@@ -39,9 +39,10 @@ export const SignUpPage = () => {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth error:', error);
-      toast.error(error.message || 'Sign up failed');
+      const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

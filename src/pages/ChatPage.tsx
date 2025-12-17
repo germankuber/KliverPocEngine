@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX, Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
@@ -23,9 +23,22 @@ export const ChatPage = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [simulationData, setSimulationData] = useState<any>(null);
-  const [appSettings, setAppSettings] = useState<any>(null);
-  const [globalPrompts, setGlobalPrompts] = useState<any>(null);
+  const [simulationData, setSimulationData] = useState<{
+    name?: string;
+    objective?: string;
+    character?: string;
+    setting_id?: string;
+    characters?: { name?: string; description?: string };
+  } | null>(null);
+  const [appSettings, setAppSettings] = useState<{
+    max_interactions?: number;
+  } | null>(null);
+  const [globalPrompts, setGlobalPrompts] = useState<{
+    system_prompt?: string;
+    evaluation_rule_prompt?: string;
+    evaluator_prompt?: string;
+    player_evaluator_prompt?: string;
+  } | null>(null);
   const [rulesTracker, setRulesTracker] = useState<{[key: string]: boolean}>({});
   const [showRulesSidebar, setShowRulesSidebar] = useState(true);
   const [chatStatus, setChatStatus] = useState<'active' | 'completed' | 'failed'>('active');
@@ -40,7 +53,7 @@ export const ChatPage = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [interimTranscript, setInterimTranscript] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -207,7 +220,13 @@ export const ChatPage = () => {
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (window as typeof window & {
+        SpeechRecognition: typeof window.SpeechRecognition;
+        webkitSpeechRecognition: typeof window.SpeechRecognition;
+      }).SpeechRecognition || (window as typeof window & {
+        SpeechRecognition: typeof window.SpeechRecognition;
+        webkitSpeechRecognition: typeof window.SpeechRecognition;
+      }).webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
       
       recognitionInstance.continuous = true;
@@ -219,7 +238,7 @@ export const ChatPage = () => {
         setIsListening(true);
       };
       
-      recognitionInstance.onresult = (event: any) => {
+      recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
         let interim = '';
         let final = '';
         
@@ -245,7 +264,7 @@ export const ChatPage = () => {
         }
       };
       
-      recognitionInstance.onerror = (event: any) => {
+      recognitionInstance.onerror = (event: { error: string }) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
@@ -260,7 +279,6 @@ export const ChatPage = () => {
     } else {
       console.warn('Speech recognition not supported in this browser');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleSpeechRecognition = () => {
@@ -283,25 +301,7 @@ export const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (chatId) {
-      // Check if we're in path mode
-      const params = new URLSearchParams(window.location.search);
-      const pathIdParam = params.get('pathId');
-      
-      if (pathIdParam) {
-        console.log('🛤️ Path mode activated:', { pathId: pathIdParam });
-        setIsPathMode(true);
-        setPathId(pathIdParam);
-      } else {
-        console.log('ℹ️ Regular chat mode (not in path)');
-      }
-      
-      loadData(chatId);
-    }
-  }, [chatId]);
-
-  const loadData = async (id: string) => {
+  const loadData = useCallback(async (id: string) => {
     setIsInitialLoading(true);
     try {
       const { data: chatData, error: chatError } = await supabase
@@ -324,7 +324,7 @@ export const ChatPage = () => {
       // Set messages from chat history
       if (chatData.messages && Array.isArray(chatData.messages)) {
         // Parse ISO date strings back to Date objects
-        const parsedMessages = chatData.messages.map((m: any) => ({
+        const parsedMessages = chatData.messages.map((m: Message) => ({
           ...m,
           timestamp: new Date(m.timestamp)
         }));
@@ -341,11 +341,11 @@ export const ChatPage = () => {
           (simData.player_keypoints && Array.isArray(simData.player_keypoints))) {
         const initialTracker: {[key: string]: boolean} = {};
         
-        simData.character_keypoints?.forEach((_: any, index: number) => {
+        simData.character_keypoints?.forEach((_: unknown, index: number) => {
           initialTracker[`character_keypoint_${index + 1}`] = false;
         });
         
-        simData.player_keypoints?.forEach((_: any, index: number) => {
+        simData.player_keypoints?.forEach((_: unknown, index: number) => {
           initialTracker[`player_keypoint_${index + 1}`] = false;
         });
         
@@ -406,14 +406,32 @@ export const ChatPage = () => {
         console.error("Error loading global prompts:", promptsError);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error loading chat data:", error);
       alert("Chat session not found. It may have been deleted.");
       navigate('/chats');
     } finally {
       setIsInitialLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (chatId) {
+      // Check if we're in path mode
+      const params = new URLSearchParams(window.location.search);
+      const pathIdParam = params.get('pathId');
+      
+      if (pathIdParam) {
+        console.log('🛤️ Path mode activated:', { pathId: pathIdParam });
+        setIsPathMode(true);
+        setPathId(pathIdParam);
+      } else {
+        console.log('ℹ️ Regular chat mode (not in path)');
+      }
+      
+      loadData(chatId);
+    }
+  }, [chatId, loadData]);
 
   const saveMessages = async (newMessages: Message[]) => {
     if (!chatId) return;
@@ -519,7 +537,14 @@ export const ChatPage = () => {
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
 
       // Build configuration based on model type
-      const chatConfig: any = {
+      const chatConfig: {
+        apiKey: string;
+        openAIApiKey: string;
+        modelName: string;
+        dangerouslyAllowBrowser: boolean;
+        temperature?: number;
+        modelKwargs?: { response_format: { type: string } };
+      } = {
         apiKey: appSettings.api_key?.trim(),
         openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || 'gpt-4o',
@@ -559,7 +584,7 @@ export const ChatPage = () => {
         // Try direct parse
         parsed = JSON.parse(contentStr);
         console.log('✅ JSON parsed successfully');
-      } catch (e1) {
+      } catch {
         console.log('⚠️ Direct JSON parse failed, trying markdown extraction...');
         // Try to extract JSON from markdown code blocks
         const fenceMatch = contentStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -568,7 +593,7 @@ export const ChatPage = () => {
         try {
           parsed = JSON.parse(candidate);
           console.log('✅ JSON parsed from markdown block');
-        } catch (e2) {
+        } catch {
           console.log('⚠️ Markdown extraction failed, trying to find JSON block...');
           // Try to find first {...} block
           const firstBrace = candidate.indexOf('{');
@@ -660,7 +685,10 @@ export const ChatPage = () => {
     }
   };
 
-  const evaluateRules = async (response: string, simData: any, evaluationPrompt: string, keypointType: 'character' | 'player' = 'character') => {
+  const evaluateRules = async (response: string, simData: {
+    character_keypoints?: string[];
+    player_keypoints?: string[];
+  }, evaluationPrompt: string, keypointType: 'character' | 'player' = 'character') => {
     try {
       console.log(`🔍 Evaluating ${keypointType} keypoints for response...`);
 
@@ -670,7 +698,7 @@ export const ChatPage = () => {
       }
 
       // Prepare keypoints data for evaluation based on type
-      let keypoints: any[] = [];
+      let keypoints: Array<{ id: string; keypoint: string }> = [];
       
       if (keypointType === 'character') {
         keypoints = (simData.character_keypoints || []).map((keypoint: string, index: number) => ({
@@ -699,7 +727,7 @@ export const ChatPage = () => {
         openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0 }),
-        // @ts-ignore
+        // @ts-expect-error - dangerouslyAllowBrowser is not in the types but is supported
         dangerouslyAllowBrowser: true
       });
 
@@ -876,7 +904,7 @@ export const ChatPage = () => {
         openAIApiKey: appSettings.api_key?.trim(),
         modelName: appSettings.model || "gpt-3.5-turbo",
         ...(isReasoningModel ? {} : { temperature: 0.7 }),
-        // @ts-ignore
+        // @ts-expect-error - dangerouslyAllowBrowser is not in the types but is supported
         dangerouslyAllowBrowser: true
       });
 

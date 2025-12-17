@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { CheckCircle, Circle, Play, RotateCcw } from 'lucide-react';
@@ -48,15 +48,17 @@ export const PathPlayerPage = () => {
     const [progress, setProgress] = useState<{ [key: string]: PathProgress }>({});
     const [showIdentifierPrompt, setShowIdentifierPrompt] = useState(false);
     const [selectedSimulation, setSelectedSimulation] = useState<PathSimulation | null>(null);
-    const [userChats, setUserChats] = useState<any[]>([]);
+    const [userChats, setUserChats] = useState<Array<{
+        id: string;
+        created_at: string;
+        simulation_id: string;
+        messages: unknown;
+        analysis_result?: unknown;
+        simulations: { name: string };
+    }>>([]);
     const [expandedHistory, setExpandedHistory] = useState<{ [key: string]: boolean }>({});
 
-    useEffect(() => {
-        loadPath();
-        loadUserIdentifier();
-    }, [pathId]);
-
-    const loadPath = async () => {
+    const loadPath = useCallback(async () => {
         try {
             setIsLoading(true);
             const { data, error } = await supabase
@@ -88,35 +90,16 @@ export const PathPlayerPage = () => {
 
       // Sort simulations by order_index
       data.path_simulations.sort((a: PathSimulation, b: PathSimulation) => a.order_index - b.order_index);
-      setPath(data as any);
+      setPath(data as Path);
         } catch (error) {
             console.error('Error loading path:', error);
             alert('Error loading path');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [pathId]);
 
-    const loadUserIdentifier = () => {
-        const stored = localStorage.getItem('path_user_identifier');
-        if (stored) {
-            setUserIdentifier(stored);
-            loadProgress(stored);
-            loadUserChats(stored);
-        } else {
-            setShowIdentifierPrompt(true);
-        }
-    };
-
-    const saveUserIdentifier = (identifier: string) => {
-        localStorage.setItem('path_user_identifier', identifier);
-        setUserIdentifier(identifier);
-        setShowIdentifierPrompt(false);
-        loadProgress(identifier);
-        loadUserChats(identifier);
-    };
-
-    const loadProgress = async (identifier: string) => {
+    const loadProgress = useCallback(async (identifier: string) => {
         if (!pathId) return;
 
         try {
@@ -141,9 +124,9 @@ export const PathPlayerPage = () => {
         } catch (error) {
             console.error('Error loading progress:', error);
         }
-    };
+    }, [pathId]);
 
-    const loadUserChats = async (identifier: string) => {
+    const loadUserChats = useCallback(async (identifier: string) => {
         if (!pathId) return;
 
         try {
@@ -168,6 +151,30 @@ export const PathPlayerPage = () => {
         } catch (error) {
             console.error('Error loading user chats:', error);
         }
+    }, [pathId]);
+
+    const loadUserIdentifier = useCallback(() => {
+        const stored = localStorage.getItem('path_user_identifier');
+        if (stored) {
+            setUserIdentifier(stored);
+            loadProgress(stored);
+            loadUserChats(stored);
+        } else {
+            setShowIdentifierPrompt(true);
+        }
+    }, [loadProgress, loadUserChats]);
+
+    useEffect(() => {
+        loadPath();
+        loadUserIdentifier();
+    }, [loadPath, loadUserIdentifier]);
+
+    const saveUserIdentifier = (identifier: string) => {
+        localStorage.setItem('path_user_identifier', identifier);
+        setUserIdentifier(identifier);
+        setShowIdentifierPrompt(false);
+        loadProgress(identifier);
+        loadUserChats(identifier);
     };
 
     const getSimulationStatus = (pathSim: PathSimulation) => {

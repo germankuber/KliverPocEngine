@@ -8,13 +8,18 @@ import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import './ChatListPage.css';
 
+type ChatMessage = {
+  role: string;
+  content: string;
+};
+
 type Chat = {
   id: string;
   simulation_id: string;
   created_at: string;
-  messages: any[];
+  messages: ChatMessage[];
   status?: 'active' | 'completed' | 'failed';
-  analysis_result?: any;
+  analysis_result?: EvaluationJson;
   analysis_updated_at?: string | null;
   simulations: {
     name: string;
@@ -153,8 +158,8 @@ export const ChatListPage = () => {
 
       const userMessages = Array.isArray(chat.messages)
         ? chat.messages
-            .filter((m: any) => m?.role === 'user' && typeof m?.content === 'string')
-            .map((m: any) => m.content.trim())
+            .filter((m: ChatMessage) => m?.role === 'user' && typeof m?.content === 'string')
+            .map((m: ChatMessage) => m.content.trim())
             .filter(Boolean)
         : [];
 
@@ -172,7 +177,7 @@ export const ChatListPage = () => {
         modelKwargs: {
           response_format: { type: 'json_object' }
         },
-        // @ts-ignore
+        // @ts-expect-error - dangerouslyAllowBrowser is not in the types but is supported
         dangerouslyAllowBrowser: true
       });
 

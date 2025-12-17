@@ -38,7 +38,7 @@ type Simulation = {
     };
     chats?: {
         id: string;
-        analysis_result: any;
+        analysis_result: unknown;
         created_at: string;
     }[];
 };
