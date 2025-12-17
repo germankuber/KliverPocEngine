@@ -196,6 +196,26 @@
   overflow-y: auto;
 }
 
+.keypoints-section-header {
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.keypoints-section-header:first-child {
+  margin-top: 0;
+}
+
+.keypoints-section-header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .rule-item-tracker {
   display: flex;
   align-items: center;

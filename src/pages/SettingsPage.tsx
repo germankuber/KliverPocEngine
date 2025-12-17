@@ -26,8 +26,9 @@ type Setting = {
 type GlobalPrompts = {
   id: string;
   system_prompt: string;
-  evaluation_rule_prompt: string;
-  evaluator_prompt: string;
+  character_keypoints_evaluation_prompt: string;
+  character_analysis_prompt: string;
+  player_keypoints_evaluation_prompt: string;
   langsmith_api_key?: string;
   langsmith_project?: string;
   langsmith_enabled?: boolean;
@@ -96,12 +97,15 @@ export const SettingsPage = () => {
     
     setIsSavingPrompts(true);
     try {
+      console.log('Saving global prompts:', globalPrompts);
+      
       const { error } = await supabase
         .from('global_prompts')
         .update({
           system_prompt: globalPrompts.system_prompt,
-          evaluation_rule_prompt: globalPrompts.evaluation_rule_prompt,
-          evaluator_prompt: globalPrompts.evaluator_prompt || '',
+          character_keypoints_evaluation_prompt: globalPrompts.character_keypoints_evaluation_prompt,
+          character_analysis_prompt: globalPrompts.character_analysis_prompt || '',
+          player_keypoints_evaluation_prompt: globalPrompts.player_keypoints_evaluation_prompt || '',
           langsmith_api_key: globalPrompts.langsmith_api_key || '',
           langsmith_project: globalPrompts.langsmith_project || '',
           langsmith_enabled: globalPrompts.langsmith_enabled || false,
@@ -276,21 +280,21 @@ export const SettingsPage = () => {
               <Accordion.Item value="evaluation-prompt" className="accordion-item">
                 <Accordion.Header className="accordion-header">
                   <Accordion.Trigger className="accordion-trigger">
-                    <span>Evaluation Rule Prompt</span>
+                    <span>Character Keypoints Evaluation Prompt</span>
                     <ChevronDown className="accordion-chevron" />
                   </Accordion.Trigger>
                 </Accordion.Header>
                 <Accordion.Content className="accordion-content">
                   <div className="form-group">
                     <p className="form-helper-text">
-                      Rules and criteria for evaluating AI performance and responses.
-                      This prompt receives the AI response and rules to evaluate against.
+                      Evaluation criteria for character keypoints during the conversation.
+                      This prompt is used to evaluate if the character (AI) mentioned the required keypoints.
                     </p>
                     <HighlightedTextarea
                       id="evaluationPrompt"
-                      value={globalPrompts.evaluation_rule_prompt}
-                      onChange={(value) => setGlobalPrompts({...globalPrompts, evaluation_rule_prompt: value})}
-                      placeholder="e.g., Evaluate if the response follows the defined rules and answers appropriately..."
+                      value={globalPrompts.character_keypoints_evaluation_prompt}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, character_keypoints_evaluation_prompt: value})}
+                      placeholder="e.g., Evaluate if the character mentioned all required keypoints appropriately..."
                       rows={15}
                     />
                   </div>
@@ -301,21 +305,45 @@ export const SettingsPage = () => {
               <Accordion.Item value="evaluator-prompt" className="accordion-item">
                 <Accordion.Header className="accordion-header">
                   <Accordion.Trigger className="accordion-trigger">
-                    <span>Evaluator Prompt</span>
+                    <span>Character Analysis Prompt</span>
                     <ChevronDown className="accordion-chevron" />
                   </Accordion.Trigger>
                 </Accordion.Header>
                 <Accordion.Content className="accordion-content">
                   <div className="form-group">
                     <p className="form-helper-text">
-                      Additional evaluation criteria and instructions for the AI evaluator.
-                      This complements the evaluation rule prompt with specific guidelines.
+                      Analysis criteria for character keypoints. Used to analyze if the character mentioned the required facts.
                     </p>
                     <HighlightedTextarea
-                      id="evaluatorPrompt"
-                      value={globalPrompts.evaluator_prompt || ''}
-                      onChange={(value) => setGlobalPrompts({...globalPrompts, evaluator_prompt: value})}
+                      id="characterAnalysisPrompt"
+                      value={globalPrompts.character_analysis_prompt || ''}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, character_analysis_prompt: value})}
                       placeholder="e.g., Be strict in evaluation and provide detailed feedback..."
+                      rows={15}
+                    />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
+
+              {/* Player Evaluator Prompt Accordion Item */}
+              <Accordion.Item value="player-evaluator-prompt" className="accordion-item">
+                <Accordion.Header className="accordion-header">
+                  <Accordion.Trigger className="accordion-trigger">
+                    <span>Player Keypoints Evaluation Prompt</span>
+                    <ChevronDown className="accordion-chevron" />
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="accordion-content">
+                  <div className="form-group">
+                    <p className="form-helper-text">
+                      Evaluation criteria for player keypoints during the conversation.
+                      This prompt is used to evaluate if the player mentioned the required keypoints.
+                    </p>
+                    <HighlightedTextarea
+                      id="playerAnalysisPrompt"
+                      value={globalPrompts.player_keypoints_evaluation_prompt || ''}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, player_keypoints_evaluation_prompt: value})}
+                      placeholder="e.g., Evaluate if the player mentioned all required keypoints appropriately..."
                       rows={15}
                     />
                   </div>

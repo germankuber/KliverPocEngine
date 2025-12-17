@@ -33,7 +33,7 @@ export const ChatPage = () => {
   const [completionMessage, setCompletionMessage] = useState('');
   const [isPathMode, setIsPathMode] = useState(false);
   const [pathId, setPathId] = useState<string | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // Activado por defecto
+  const [voiceEnabled, setVoiceEnabled] = useState(false); // Desactivado por defecto
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -679,11 +679,11 @@ export const ChatPage = () => {
       });
 
       const characterKeypoints = simulationData.character_keypoints && Array.isArray(simulationData.character_keypoints)
-        ? simulationData.character_keypoints.map((k: string) => `- ${k}`).join("\n")
+        ? simulationData.character_keypoints.map((k: string, index: number) => `${index + 1}. ${k}`).join("\n")
         : "";
       
       const playerKeypoints = simulationData.player_keypoints && Array.isArray(simulationData.player_keypoints)
-        ? simulationData.player_keypoints.map((k: string) => `- ${k}`).join("\n")
+        ? simulationData.player_keypoints.map((k: string, index: number) => `${index + 1}. ${k}`).join("\n")
         : "";
 
       // Use global prompt
@@ -692,12 +692,12 @@ export const ChatPage = () => {
       // Get character description from relation or fallback to legacy field
       const characterDescription = simulationData.characters?.description || simulationData.character || "";
 
-      // Replace wildcards if they exist in the prompt
-      systemMessageContent = systemMessageContent.replace(/{{character}}/g, characterDescription)
-        .replace(/{{objective}}/g, simulationData.objective || "")
-        .replace(/{{context}}/g, simulationData.context || "")
-        .replace(/{{character_keypoints}}/g, characterKeypoints)
-        .replace(/{{player_keypoints}}/g, playerKeypoints);
+      // Replace wildcards - solo los que existen en el template
+      systemMessageContent = systemMessageContent
+        .replace(/{{CHARACTER}}/g, characterDescription)
+        .replace(/{{OBJECTIVE}}/g, simulationData.objective || "")
+        .replace(/{{CONTEXT}}/g, simulationData.context || "")
+        .replace(/{{RULES}}/g, characterKeypoints);
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {
@@ -709,8 +709,11 @@ export const ChatPage = () => {
       if (!systemMessageContent.includes(simulationData.context) && simulationData.context) {
         systemMessageContent += `\n\nContext: ${simulationData.context}`;
       }
-      if (!systemMessageContent.includes(rules) && rules) {
-        systemMessageContent += `\n\nRules: ${rules}`;
+      if (characterKeypoints && !systemMessageContent.includes(characterKeypoints)) {
+        systemMessageContent += `\n\nCharacter Keypoints:\n${characterKeypoints}`;
+      }
+      if (playerKeypoints && !systemMessageContent.includes(playerKeypoints)) {
+        systemMessageContent += `\n\nPlayer Keypoints:\n${playerKeypoints}`;
       }
 
       const history = [
