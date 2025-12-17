@@ -617,16 +617,14 @@ export const ChatPage = () => {
       return;
     }
 
-    const userMessage: Message = {
+    let userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
       timestamp: new Date()
     };
 
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    saveMessages(updatedMessages);
+    setMessages([...messages, userMessage]);
     setInput("");
     setIsLoading(true);
 
@@ -644,12 +642,13 @@ export const ChatPage = () => {
       
       if (playerEvaluationResult) {
         // Update the user message with evaluation results
-        const updatedUserMessage = { ...userMessage, ...playerEvaluationResult };
-        const messagesWithEvaluation = [...messages, updatedUserMessage];
-        setMessages(messagesWithEvaluation);
-        saveMessages(messagesWithEvaluation);
+        userMessage = { ...userMessage, ...playerEvaluationResult };
+        setMessages([...messages, userMessage]);
       }
     }
+
+    const updatedMessages = [...messages, userMessage];
+    saveMessages(updatedMessages);
 
     // Check interaction limit
     const assistantMessagesCount = updatedMessages.filter(m => m.role === 'assistant').length;
