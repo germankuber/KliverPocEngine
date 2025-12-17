@@ -26,3 +26,25 @@
 .info-box li {
     margin-bottom: 8px;
 }
+
+/* Keypoints styling */
+.rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rule-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.rule-inputs {
+    flex: 1;
+}
+
+.rule-inputs input {
+    width: 100%;
+    min-width: 0;
+}
