@@ -299,6 +299,18 @@
   min-width: 150px;
 }
 
+.analyzing-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  min-height: 80px;
+}
+
+.completion-modal .analyzing-spinner + h2 {
+  color: var(--primary);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

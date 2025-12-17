@@ -31,6 +31,9 @@ export const ChatPage = () => {
   const [chatStatus, setChatStatus] = useState<'active' | 'completed' | 'failed'>('active');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionMessage, setCompletionMessage] = useState('');
+  const [showAnalyzingModal, setShowAnalyzingModal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [analysisScore, setAnalysisScore] = useState<number | null>(null);
   const [isPathMode, setIsPathMode] = useState(false);
   const [pathId, setPathId] = useState<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false); // Desactivado por defecto
@@ -434,6 +437,131 @@ export const ChatPage = () => {
       setChatStatus(status);
     } catch (error) {
       console.error("Error updating chat status:", error);
+    }
+  };
+
+  const handleCompletionAccept = async () => {
+    setShowCompletionModal(false);
+    setShowAnalyzingModal(true);
+    
+    try {
+      const score = await analyzeChat();
+      setShowAnalyzingModal(false);
+      
+      // Show result modal with score
+      setAnalysisScore(score);
+      setShowResultModal(true);
+    } catch (error) {
+      console.error('Error during analysis:', error);
+      setShowAnalyzingModal(false);
+      // Still show result modal even if analysis fails
+      setAnalysisScore(null);
+      setShowResultModal(true);
+    }
+  };
+
+  const analyzeChat = async (): Promise<number | null> => {
+    if (!chatId || !simulationData || !appSettings) return null;
+    
+    try {
+      console.log('📊 Starting chat analysis...');
+      
+      // Load global evaluator prompt
+      const { data: promptsData, error: promptsError } = await supabase
+        .from('global_prompts')
+        .select('evaluator_prompt')
+        .limit(1)
+        .single();
+
+      if (promptsError) throw promptsError;
+      const evaluatorPrompt = promptsData?.evaluator_prompt?.trim();
+      if (!evaluatorPrompt) {
+        console.warn('⚠️ No evaluator_prompt found, skipping analysis');
+        return;
+      }
+
+      // Get character description
+      const characterText =
+        simulationData.characters?.description ||
+        simulationData.character ||
+        simulationData.characters?.name ||
+        'N/A';
+
+      // Extract user messages
+      const userMessages = messages
+        .filter(m => m.role === 'user')
+        .map(m => m.content.trim())
+        .filter(Boolean);
+
+      if (userMessages.length === 0) {
+        console.warn('⚠️ No user messages to analyze');
+        return;
+      }
+
+      const playerText = userMessages.join('\n\n');
+      const evaluatorUserMessage = `Character:\n${characterText}\n\nPlayer:\n${playerText}`;
+
+      const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
+
+      const evaluatorChat = new ChatOpenAI({
+        apiKey: appSettings.api_key?.trim(),
+        openAIApiKey: appSettings.api_key?.trim(),
+        modelName: appSettings.model || 'gpt-4o',
+        ...(isReasoningModel ? {} : { temperature: 0 }),
+        modelKwargs: {
+          response_format: { type: 'json_object' }
+        },
+        // @ts-ignore
+        dangerouslyAllowBrowser: true
+      });
+
+      const response = await evaluatorChat.invoke([
+        new SystemMessage(evaluatorPrompt),
+        new HumanMessage(evaluatorUserMessage)
+      ]);
+
+      // Parse JSON response
+      const contentStr = String(response.content).trim();
+      let parsed;
+      
+      try {
+        // Try direct parse
+        parsed = JSON.parse(contentStr);
+      } catch {
+        // Try to extract JSON from markdown code blocks
+        const fenceMatch = contentStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+        const candidate = (fenceMatch?.[1] ?? contentStr).trim();
+        
+        try {
+          parsed = JSON.parse(candidate);
+        } catch {
+          // Try to find first {...} block
+          const firstBrace = candidate.indexOf('{');
+          const lastBrace = candidate.lastIndexOf('}');
+          if (firstBrace >= 0 && lastBrace > firstBrace) {
+            const slice = candidate.slice(firstBrace, lastBrace + 1);
+            parsed = JSON.parse(slice);
+          } else {
+            throw new Error('Could not parse evaluator response as JSON');
+          }
+        }
+      }
+
+      // Save analysis result
+      const { error: updateError } = await supabase
+        .from('chats')
+        .update({
+          analysis_result: parsed,
+          analysis_updated_at: new Date().toISOString()
+        })
+        .eq('id', chatId);
+
+      if (updateError) throw updateError;
+      
+      console.log('✅ Chat analysis completed successfully');
+    } catch (error) {
+      console.error('❌ Error analyzing chat:', error);
+      // Don't show error to user, just log it
     }
   };
 
@@ -1090,16 +1218,23 @@ export const ChatPage = () => {
               <p>{completionMessage}</p>
               <button 
                 className="btn btn-primary"
-                onClick={() => {
-                  setShowCompletionModal(false);
-                  // If in path mode, redirect to path page
-                  if (isPathMode && pathId) {
-                    window.location.href = `/play/${pathId}`;
-                  }
-                }}
+                onClick={handleCompletionAccept}
               >
-                {isPathMode ? 'Volver al Path' : 'Entendido'}
+                Aceptar
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Analyzing Modal */}
+        {showAnalyzingModal && (
+          <div className="completion-modal-overlay">
+            <div className="completion-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="analyzing-spinner">
+                <LoadingSpinner />
+              </div>
+              <h2>Analizando tu conversación</h2>
+              <p>Por favor espera mientras evaluamos tu desempeño...</p>
             </div>
           </div>
         )}
