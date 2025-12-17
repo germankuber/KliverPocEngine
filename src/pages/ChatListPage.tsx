@@ -47,6 +47,7 @@ export const ChatListPage = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [analyzingChatIds, setAnalyzingChatIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -231,10 +232,53 @@ export const ChatListPage = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      // Primero eliminar todos los análisis relacionados
+      const chatIds = chats.map(c => c.id);
+      
+      if (chatIds.length === 0) return;
+
+      // Eliminar análisis de chat_analyses si existen
+      const { error: analysesError } = await supabase
+        .from('chat_analyses')
+        .delete()
+        .in('chat_id', chatIds);
+
+      if (analysesError) {
+        console.error('Error deleting analyses:', analysesError);
+      }
+
+      // Luego eliminar todos los chats
+      const { error: chatsError } = await supabase
+        .from('chats')
+        .delete()
+        .in('id', chatIds);
+
+      if (chatsError) throw chatsError;
+      
+      setChats([]);
+      setShowDeleteAllModal(false);
+    } catch (error) {
+      console.error('Error deleting all chats:', error);
+      alert('Error deleting chat history: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="chat-list-page">
       <div className="page-header">
         <h1><MessageSquare className="text-primary" /> Chat History</h1>
+        {chats.length > 0 && (
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowDeleteAllModal(true)}
+            title="Delete all chat history"
+          >
+            <Trash2 size={18} />
+            Delete All History
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -338,6 +382,16 @@ export const ChatListPage = () => {
         onConfirm={confirmDelete}
         onClose={() => setDeleteChatId(null)}
         confirmText="Delete"
+        cancelText="Cancel"
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteAllModal}
+        title="Delete All Chat History"
+        message="Are you sure you want to delete ALL chat history and their analyses? This action cannot be undone and will permanently remove all conversation records."
+        onConfirm={handleDeleteAll}
+        onClose={() => setShowDeleteAllModal(false)}
+        confirmText="Delete All"
         cancelText="Cancel"
       />
     </div>

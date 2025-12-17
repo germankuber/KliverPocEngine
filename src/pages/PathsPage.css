@@ -115,6 +115,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.5rem;
   width: 100%;
+  align-items: stretch;
 }
 
 .simulation-card {
@@ -128,6 +129,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  height: 100%;
 }
 
 .simulation-card:hover {
@@ -168,11 +170,24 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sim-card-body p {
   margin: 0.5rem 0;
   line-height: 1.5;
+}
+
+.sim-card-body .path-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  max-height: 4.5em;
 }
 
 .sim-card-body p:first-child {
@@ -208,34 +223,33 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  width: 100%;
 }
 
-.sim-actions .btn {
-  flex: 0 1 auto;
-  white-space: nowrap;
+.sim-actions .btn:not(.btn-icon-only) {
+  flex: 1 1 auto;
+  min-width: 80px;
 }
 
 .sim-actions .btn-icon-only {
-  padding: 0.4rem 0.6rem;
-}
-
-.sim-actions a {
-  text-decoration: none;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 767px) {
+  .sim-card-footer {
+    gap: 0.5rem;
+  }
+  
   .sim-actions {
     width: 100%;
   }
   
-  .sim-actions .btn {
+  .sim-actions .btn:not(.btn-icon-only) {
     flex: 1 1 auto;
   }
   
   .sim-actions .btn-icon-only {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-width: 42px;
   }
 }

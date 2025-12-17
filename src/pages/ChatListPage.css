@@ -11,7 +11,9 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .page-header h1 {
@@ -196,6 +198,11 @@
   transition: all 0.2s;
   font-size: 0.875rem;
   white-space: nowrap;
+}
+
+.page-header .btn {
+  padding: 0.7rem 1.2rem;
+  font-size: 0.9rem;
 }
 
 .chat-list-page .btn-sm {
