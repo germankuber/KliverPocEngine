@@ -499,26 +499,20 @@ export const ChatPage = () => {
       
       if (keypointType === 'character') {
         keypoints = (simData.character_keypoints || []).map((keypoint: string, index: number) => ({
-          id: `character_keypoint_${index + 1}`,
-          keypoint: keypoint,
-          type: 'character'
+          id: `keypoint_${index + 1}`,
+          keypoint: keypoint
         }));
       } else {
         keypoints = (simData.player_keypoints || []).map((keypoint: string, index: number) => ({
-          id: `player_keypoint_${index + 1}`,
-          keypoint: keypoint,
-          type: 'player'
+          id: `keypoint_${index + 1}`,
+          keypoint: keypoint
         }));
       }
 
-      // Create the evaluation payload
+      // Create the evaluation payload with new format
       const evaluationPayload = {
         response: response,
-        keypoints: keypoints.map((k: any) => ({
-          id: k.id,
-          keypoint: k.keypoint,
-          type: k.type
-        }))
+        keypoints: keypoints
       };
 
       // Create evaluation chat instance
@@ -545,51 +539,62 @@ export const ChatPage = () => {
 
       console.log("📊 Evaluation Result:", evaluationResult);
 
-      // Parse the evaluation result to extract matched rule IDs
-      const ruleIdMatch = evaluationResult.match(/RULE_ID:\s*(.+)/);
-      if (ruleIdMatch) {
-        const matchedRulesStr = ruleIdMatch[1].trim();
-        console.log("✅ Matched Rules:", matchedRulesStr);
-
-        let matchedRules: string[] = [];
-        if (matchedRulesStr !== "NO_RULE_MATCHED") {
-          matchedRules = matchedRulesStr.split(',').map(r => r.trim());
-          console.log("✅ Rules matched:", matchedRules);
+      // Parse the JSON response with new format
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = evaluationResult.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsedResult = JSON.parse(jsonMatch[0]);
+          const matchedKeypoints = parsedResult.matched_keypoints || [];
           
-          // Update rules tracker and check completion
-          const updatedTracker = { ...rulesTracker };
-          matchedRules.forEach(ruleId => {
-            updatedTracker[ruleId] = true;
-          });
-          setRulesTracker(updatedTracker);
+          console.log("✅ Matched Keypoints:", matchedKeypoints);
+          
+          let matchedRules: string[] = [];
+          if (matchedKeypoints.length > 0) {
+            // Convert keypoint IDs to full rule IDs with prefix
+            matchedRules = matchedKeypoints.map((kpId: string) => 
+              `${keypointType}_${kpId}`
+            );
+            console.log("✅ Rules matched:", matchedRules);
+            
+            // Update rules tracker and check completion
+            const updatedTracker = { ...rulesTracker };
+            matchedRules.forEach(ruleId => {
+              updatedTracker[ruleId] = true;
+            });
+            setRulesTracker(updatedTracker);
 
-          // Check if ALL rules are now matched
-          const allRulesMatched = Object.values(updatedTracker).every(status => status === true);
-          if (allRulesMatched) {
-            console.log("🎉 All rules matched! Showing completion modal");
-            console.log("📊 Updated tracker:", updatedTracker);
-            console.log("🔄 Updating chat status to completed");
-            
-            setCompletionMessage('🎉 Congratulations! You have completed all the rules for this simulation!');
-            setShowCompletionModal(true);
-            await updateChatStatus('completed');
-            
-            // If in path mode, update path progress as completed
-            if (isPathMode && pathId) {
-              console.log("🛤️ Path mode detected, updating path progress");
-              await updatePathProgress(true, false);
-            } else {
-              console.log("ℹ️ Not in path mode, skipping path progress update");
+            // Check if ALL rules are now matched
+            const allRulesMatched = Object.values(updatedTracker).every(status => status === true);
+            if (allRulesMatched) {
+              console.log("🎉 All rules matched! Showing completion modal");
+              console.log("📊 Updated tracker:", updatedTracker);
+              console.log("🔄 Updating chat status to completed");
+              
+              setCompletionMessage('🎉 Congratulations! You have completed all the keypoints for this simulation!');
+              setShowCompletionModal(true);
+              await updateChatStatus('completed');
+              
+              // If in path mode, update path progress as completed
+              if (isPathMode && pathId) {
+                console.log("🛤️ Path mode detected, updating path progress");
+                await updatePathProgress(true, false);
+              } else {
+                console.log("ℹ️ Not in path mode, skipping path progress update");
+              }
             }
+          } else {
+            console.log("⚠️ No keypoints were matched");
           }
-        } else {
-          console.log("⚠️ No rules were matched");
-        }
 
-        return {
-          evaluationResult: evaluationResult,
-          matchedRules: matchedRules
-        };
+          return {
+            evaluationResult: evaluationResult,
+            matchedRules: matchedRules
+          };
+        }
+      } catch (parseError) {
+        console.error("Error parsing evaluation result:", parseError);
+        console.log("Raw result:", evaluationResult);
       }
 
       return null;
