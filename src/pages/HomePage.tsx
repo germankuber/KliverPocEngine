@@ -12,7 +12,8 @@ type Simulation = {
   created_at: string;
   character?: string;
   objective?: string;
-  rules?: { question: string; answer: string }[];
+  character_keypoints?: string[];
+  player_keypoints?: string[];
   setting_id?: string;
 };
 
@@ -156,10 +157,11 @@ export const HomePage = () => {
                           <span className="truncate-text">{sim.objective}</span>
                         </p>
                       )}
-                      {sim.rules && sim.rules.length > 0 && (
+                      {((sim.character_keypoints && sim.character_keypoints.length > 0) || 
+                        (sim.player_keypoints && sim.player_keypoints.length > 0)) && (
                         <p className="rules-info">
-                          <strong>Rules:</strong>
-                          <span>{sim.rules.length} defined</span>
+                          <strong>Keypoints:</strong>
+                          <span>{(sim.character_keypoints?.length || 0) + (sim.player_keypoints?.length || 0)} defined</span>
                         </p>
                       )}
                     </div>

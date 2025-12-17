@@ -333,12 +333,19 @@ export const ChatPage = () => {
       const simData = chatData.simulations;
       setSimulationData(simData);
 
-      // Initialize rules tracker
-      if (simData.rules && Array.isArray(simData.rules)) {
+      // Initialize keypoints tracker
+      if ((simData.character_keypoints && Array.isArray(simData.character_keypoints)) ||
+          (simData.player_keypoints && Array.isArray(simData.player_keypoints))) {
         const initialTracker: {[key: string]: boolean} = {};
-        simData.rules.forEach((_: any, index: number) => {
-          initialTracker[`rule_${index + 1}`] = false;
+        
+        simData.character_keypoints?.forEach((_: any, index: number) => {
+          initialTracker[`character_keypoint_${index + 1}`] = false;
         });
+        
+        simData.player_keypoints?.forEach((_: any, index: number) => {
+          initialTracker[`player_keypoint_${index + 1}`] = false;
+        });
+        
         setRulesTracker(initialTracker);
       }
 
@@ -480,26 +487,35 @@ export const ChatPage = () => {
 
   const evaluateRules = async (response: string, simData: any, evaluationPrompt: string) => {
     try {
-      console.log("🔍 Evaluating rules for response...");
+      console.log("🔍 Evaluating keypoints for response...");
 
       if (!appSettings?.api_key) {
-        console.error("API Key is missing for rule evaluation");
+        console.error("API Key is missing for keypoint evaluation");
         return;
       }
 
-      // Prepare rules data for evaluation
-      const rulesForEvaluation = simData.rules.map((rule: any, index: number) => ({
-        id: `rule_${index + 1}`,
-        question: rule.question,
-        answer: rule.answer
+      // Prepare keypoints data for evaluation
+      const characterKeypoints = (simData.character_keypoints || []).map((keypoint: string, index: number) => ({
+        id: `character_keypoint_${index + 1}`,
+        keypoint: keypoint,
+        type: 'character'
       }));
+      
+      const playerKeypoints = (simData.player_keypoints || []).map((keypoint: string, index: number) => ({
+        id: `player_keypoint_${index + 1}`,
+        keypoint: keypoint,
+        type: 'player'
+      }));
+      
+      const allKeypoints = [...characterKeypoints, ...playerKeypoints];
 
       // Create the evaluation payload
       const evaluationPayload = {
         response: response,
-        rules: rulesForEvaluation.map((r: any) => ({
-          id: r.id,
-          answer: r.answer
+        keypoints: allKeypoints.map((k: any) => ({
+          id: k.id,
+          keypoint: k.keypoint,
+          type: k.type
         }))
       };
 
@@ -662,8 +678,12 @@ export const ChatPage = () => {
         dangerouslyAllowBrowser: true
       });
 
-      const rules = simulationData.rules && Array.isArray(simulationData.rules)
-        ? simulationData.rules.map((r: any) => `- "${r.question}" → "${r.answer}"`).join("\n")
+      const characterKeypoints = simulationData.character_keypoints && Array.isArray(simulationData.character_keypoints)
+        ? simulationData.character_keypoints.map((k: string) => `- ${k}`).join("\n")
+        : "";
+      
+      const playerKeypoints = simulationData.player_keypoints && Array.isArray(simulationData.player_keypoints)
+        ? simulationData.player_keypoints.map((k: string) => `- ${k}`).join("\n")
         : "";
 
       // Use global prompt
@@ -676,7 +696,8 @@ export const ChatPage = () => {
       systemMessageContent = systemMessageContent.replace(/{{character}}/g, characterDescription)
         .replace(/{{objective}}/g, simulationData.objective || "")
         .replace(/{{context}}/g, simulationData.context || "")
-        .replace(/{{rules}}/g, rules);
+        .replace(/{{character_keypoints}}/g, characterKeypoints)
+        .replace(/{{player_keypoints}}/g, playerKeypoints);
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {
@@ -728,7 +749,9 @@ export const ChatPage = () => {
       let finalBotMessage = { ...botMessage, content: fullContent };
 
       // Evaluate rules if evaluation_rule_prompt is defined
-      if (globalPrompts?.evaluation_rule_prompt && simulationData.rules && simulationData.rules.length > 0) {
+      if (globalPrompts?.evaluation_rule_prompt && 
+          ((simulationData.character_keypoints && simulationData.character_keypoints.length > 0) ||
+           (simulationData.player_keypoints && simulationData.player_keypoints.length > 0))) {
         const evaluationResult = await evaluateRules(fullContent, simulationData, globalPrompts.evaluation_rule_prompt);
         if (evaluationResult) {
           finalBotMessage = { ...finalBotMessage, ...evaluationResult };
@@ -784,11 +807,12 @@ export const ChatPage = () => {
           <p>Character: {simulationData?.character}</p>
         </div>
         <div className="chat-header-actions">
-          {simulationData?.rules && simulationData.rules.length > 0 && (
+          {((simulationData?.character_keypoints && simulationData.character_keypoints.length > 0) ||
+            (simulationData?.player_keypoints && simulationData.player_keypoints.length > 0)) && (
             <button 
               className="rules-toggle-btn"
               onClick={() => setShowRulesSidebar(!showRulesSidebar)}
-              title="Toggle rules progress"
+              title="Toggle keypoints progress"
             >
               <ListChecks size={20} />
               <span className="rules-count-badge">
@@ -817,8 +841,9 @@ export const ChatPage = () => {
         </div>
       </div>
 
-      {/* Rules Sidebar */}
-      {simulationData?.rules && simulationData.rules.length > 0 && (
+      {/* Keypoints Sidebar */}
+      {((simulationData?.character_keypoints && simulationData.character_keypoints.length > 0) ||
+        (simulationData?.player_keypoints && simulationData.player_keypoints.length > 0)) && (
         <>
           <div 
             className={`rules-sidebar-overlay ${showRulesSidebar ? 'show' : ''}`}
@@ -826,7 +851,7 @@ export const ChatPage = () => {
           />
           <div className={`rules-sidebar ${showRulesSidebar ? 'open' : ''}`}>
             <div className="rules-sidebar-header">
-              <h3>Rules Progress</h3>
+              <h3>Keypoints Progress</h3>
               <button 
                 className="rules-close-btn"
                 onClick={() => setShowRulesSidebar(false)}
@@ -835,22 +860,48 @@ export const ChatPage = () => {
               </button>
             </div>
             <div className="rules-list-tracker">
-              {simulationData.rules.map((rule: any, index: number) => {
-                const ruleId = `rule_${index + 1}`;
-                const isMatched = rulesTracker[ruleId];
-                return (
-                  <div key={ruleId} className={`rule-item-tracker ${isMatched ? 'matched' : 'pending'}`}>
-                    <span className="rule-icon">{isMatched ? '✅' : '⏳'}</span>
-                    <div className="rule-info">
-                      <span className="rule-id">{ruleId}</span>
-                      <span className="rule-question">{rule.question}</span>
-                    </div>
+              {simulationData.character_keypoints && simulationData.character_keypoints.length > 0 && (
+                <>
+                  <div className="keypoints-section-header">
+                    <h4>Character Keypoints</h4>
                   </div>
-                );
-              })}
+                  {simulationData.character_keypoints.map((keypoint: string, index: number) => {
+                    const keypointId = `character_keypoint_${index + 1}`;
+                    const isMatched = rulesTracker[keypointId];
+                    return (
+                      <div key={keypointId} className={`rule-item-tracker ${isMatched ? 'matched' : 'pending'}`}>
+                        <span className="rule-icon">{isMatched ? '✅' : '⏳'}</span>
+                        <div className="rule-info">
+                          <span className="rule-question">{keypoint}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              
+              {simulationData.player_keypoints && simulationData.player_keypoints.length > 0 && (
+                <>
+                  <div className="keypoints-section-header">
+                    <h4>Player Keypoints</h4>
+                  </div>
+                  {simulationData.player_keypoints.map((keypoint: string, index: number) => {
+                    const keypointId = `player_keypoint_${index + 1}`;
+                    const isMatched = rulesTracker[keypointId];
+                    return (
+                      <div key={keypointId} className={`rule-item-tracker ${isMatched ? 'matched' : 'pending'}`}>
+                        <span className="rule-icon">{isMatched ? '✅' : '⏳'}</span>
+                        <div className="rule-info">
+                          <span className="rule-question">{keypoint}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
             <div className="rules-summary">
-              {Object.values(rulesTracker).filter(Boolean).length} / {Object.keys(rulesTracker).length} rules matched
+              {Object.values(rulesTracker).filter(Boolean).length} / {Object.keys(rulesTracker).length} keypoints matched
             </div>
           </div>
         </>

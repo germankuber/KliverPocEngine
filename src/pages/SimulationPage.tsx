@@ -140,7 +140,7 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 setValue('playerKeypoints', sim.player_keypoints || [""]);
             }
         }
-    }, [id, simulations, isNew, reset, setValue, replace]);
+    }, [id, simulations, isNew, reset, setValue]);
 
     const fetchSettings = async () => {
         try {
@@ -582,10 +582,13 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                                             <strong>Max Interactions:</strong>
                                             <span>{sim.max_interactions || 10}</span>
                                         </p>
-                                        {sim.rules && sim.rules.length > 0 && (
+                                        {((sim.character_keypoints && sim.character_keypoints.length > 0) || 
+                                          (sim.player_keypoints && sim.player_keypoints.length > 0)) && (
                                             <p className="rules-count">
-                                                <strong>Rules:</strong>
-                                                <span>{sim.rules.length} defined</span>
+                                                <strong>Keypoints:</strong>
+                                                <span>
+                                                    {(sim.character_keypoints?.length || 0) + (sim.player_keypoints?.length || 0)} defined
+                                                </span>
                                             </p>
                                         )}
                                         {latestAnalysis && latestAnalysis.analysis_result?.overall_score !== undefined && (
