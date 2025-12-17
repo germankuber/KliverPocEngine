@@ -45,3 +45,4 @@ COMMENT ON COLUMN path_simulations.max_attempts IS 'Maximum number of times a si
 COMMENT ON COLUMN path_progress.user_identifier IS 'Identifier for the user (email, session ID, or other)';
 
 
+

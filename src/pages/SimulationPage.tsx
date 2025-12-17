@@ -8,18 +8,14 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './SimulationPage.css';
 
-type Rule = {
-    question: string;
-    answer: string;
-};
-
 type SimulationInputs = {
     name: string;
     characterId: string;
     objective: string;
     context: string;
     maxInteractions: number;
-    rules: Rule[];
+    characterKeypoints: string[];
+    playerKeypoints: string[];
     settingId: string;
 };
 
@@ -32,7 +28,8 @@ type Simulation = {
     objective?: string;
     context?: string;
     max_interactions?: number;
-    rules?: Rule[];
+    character_keypoints?: string[];
+    player_keypoints?: string[];
     setting_id?: string;
     characters?: {
         id: string;
@@ -79,16 +76,22 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
             objective: "Help the user with their tasks.",
             context: "",
             maxInteractions: 10,
-            rules: [{ question: "How should you respond?", answer: "Polite and concise." }],
+            characterKeypoints: [""],
+            playerKeypoints: [""],
             settingId: ""
         }
     });
 
     const maxInteractionsValue = watch("maxInteractions");
 
-    const { fields, append, remove, replace } = useFieldArray({
+    const { fields: characterKeypointsFields, append: appendCharacterKeypoint, remove: removeCharacterKeypoint } = useFieldArray({
         control,
-        name: "rules"
+        name: "characterKeypoints"
+    });
+
+    const { fields: playerKeypointsFields, append: appendPlayerKeypoint, remove: removePlayerKeypoint } = useFieldArray({
+        control,
+        name: "playerKeypoints"
     });
 
     const fetchData = async () => {
@@ -133,10 +136,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 setValue('context', sim.context || '');
                 setValue('maxInteractions', sim.max_interactions || 10);
                 setValue('settingId', sim.setting_id || '');
-
-                if (sim.rules && sim.rules.length > 0) {
-                    replace(sim.rules);
-                }
+                setValue('characterKeypoints', sim.character_keypoints || [""]);
+                setValue('playerKeypoints', sim.player_keypoints || [""]);
             }
         }
     }, [id, simulations, isNew, reset, setValue, replace]);
@@ -222,7 +223,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
         objective: sim.objective,
         context: sim.context,
         max_interactions: sim.max_interactions,
-        rules: sim.rules,
+        character_keypoints: sim.character_keypoints,
+        player_keypoints: sim.player_keypoints,
         setting_id: sim.setting_id
       };
 
@@ -285,7 +287,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
-                        rules: data.rules,
+                        character_keypoints: data.characterKeypoints.filter(k => k.trim() !== ''),
+                        player_keypoints: data.playerKeypoints.filter(k => k.trim() !== ''),
                         setting_id: data.settingId
                     })
                     .eq('id', id);
@@ -301,7 +304,8 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         objective: data.objective,
                         context: data.context,
                         max_interactions: Number(data.maxInteractions),
-                        rules: data.rules,
+                        character_keypoints: data.characterKeypoints.filter(k => k.trim() !== ''),
+                        player_keypoints: data.playerKeypoints.filter(k => k.trim() !== ''),
                         setting_id: data.settingId
                     });
 
@@ -464,30 +468,24 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                         </div>
 
                         <div className="form-group">
-                            <label>Operational Rules</label>
-                            <p className="form-helper-text">Define specific behaviors and responses for the AI agent.</p>
+                            <label>Character Keypoints</label>
+                            <p className="form-helper-text">Facts that the character must mention during the conversation.</p>
                             <div className="rules-list">
-                                {fields.map((field, index) => (
+                                {characterKeypointsFields.map((field, index) => (
                                     <div key={field.id} className="rule-item">
                                         <div className="rule-inputs">
                                             <input
                                                 type="text"
-                                                placeholder="Condition / Question"
-                                                {...register(`rules.${index}.question` as const, { required: true })}
-                                                className="form-input"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Rule / Answer"
-                                                {...register(`rules.${index}.answer` as const, { required: true })}
+                                                placeholder="e.g., Our return policy is 30 days"
+                                                {...register(`characterKeypoints.${index}` as const)}
                                                 className="form-input"
                                             />
                                         </div>
                                         <button
                                             type="button"
                                             className="btn-icon-delete"
-                                            onClick={() => remove(index)}
-                                            title="Remove rule"
+                                            onClick={() => removeCharacterKeypoint(index)}
+                                            title="Remove keypoint"
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -497,9 +495,43 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             <button
                                 type="button"
                                 className="btn btn-secondary btn-sm mt-2"
-                                onClick={() => append({ question: "", answer: "" })}
+                                onClick={() => appendCharacterKeypoint("")}
                             >
-                                <Plus size={16} /> Add Rule
+                                <Plus size={16} /> Add Character Keypoint
+                            </button>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Player Keypoints</label>
+                            <p className="form-helper-text">Facts that the player must mention during the conversation.</p>
+                            <div className="rules-list">
+                                {playerKeypointsFields.map((field, index) => (
+                                    <div key={field.id} className="rule-item">
+                                        <div className="rule-inputs">
+                                            <input
+                                                type="text"
+                                                placeholder="e.g., My order number is #12345"
+                                                {...register(`playerKeypoints.${index}` as const)}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn-icon-delete"
+                                            onClick={() => removePlayerKeypoint(index)}
+                                            title="Remove keypoint"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                className="btn btn-secondary btn-sm mt-2"
+                                onClick={() => appendPlayerKeypoint("")}
+                            >
+                                <Plus size={16} /> Add Player Keypoint
                             </button>
                         </div>
 

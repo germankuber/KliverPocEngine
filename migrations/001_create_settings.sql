@@ -20,3 +20,4 @@ CREATE INDEX IF NOT EXISTS idx_simulations_setting_id ON simulations(setting_id)
 -- DROP TABLE IF EXISTS app_settings;
 
 
+

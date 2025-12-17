@@ -10,3 +10,4 @@ COMMENT ON COLUMN global_prompts.langsmith_project IS 'LangSmith project name';
 COMMENT ON COLUMN global_prompts.langsmith_enabled IS 'Enable/disable LangSmith tracing';
 
 
+

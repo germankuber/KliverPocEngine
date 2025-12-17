@@ -21,3 +21,4 @@ COMMENT ON COLUMN characters.description IS 'Detailed character description and 
 COMMENT ON COLUMN simulations.character_id IS 'Reference to a reusable character profile';
 
 
+

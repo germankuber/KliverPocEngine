@@ -297,3 +297,4 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
 };
 
 
+

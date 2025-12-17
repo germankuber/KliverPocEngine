@@ -24,3 +24,4 @@ ALTER TABLE simulations DROP COLUMN IF EXISTS system_prompt;
 ALTER TABLE simulations DROP COLUMN IF EXISTS evaluation_rule_prompt;
 
 
+
