@@ -45,6 +45,7 @@ export const ChatPage = () => {
     evaluation_rule_prompt?: string;
     evaluator_prompt?: string;
     player_evaluator_prompt?: string;
+    character_keypoints_evaluation_prompt?: string;
     langsmith_enabled?: boolean;
     langsmith_api_key?: string;
     langsmith_project?: string;
