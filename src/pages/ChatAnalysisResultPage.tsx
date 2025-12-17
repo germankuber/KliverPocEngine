@@ -107,120 +107,196 @@ export const ChatAnalysisResultPage = () => {
 
   const updatedAt = row.analysis_updated_at || row.created_at;
 
+  const getScoreColor = (score: number | undefined) => {
+    if (!score) return 'gray';
+    if (score >= 80) return 'green';
+    if (score >= 60) return 'yellow';
+    return 'red';
+  };
+
+  const scoreColor = getScoreColor(analysis?.overall_score);
+
   return (
     <div className="chat-analysis-result-page">
-      <div className="page-header">
-        <div className="header-left">
-          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/analyses')}>
-            <ArrowLeft size={16} /> Back
-          </button>
-          <h1><BarChart3 className="text-primary" /> Analysis</h1>
+      <button className="back-button" onClick={() => navigate('/analyses')}>
+        <ArrowLeft size={18} /> Volver a Análisis
+      </button>
+
+      <div className="hero-section">
+        <div className="hero-badge">
+          <BarChart3 size={20} />
+          Reporte de Análisis Completo
         </div>
-        <div className="header-right">
-          <span className="analysis-date">
-            <Calendar size={14} />
-            {new Date(updatedAt).toLocaleDateString()}
-          </span>
+        <h1 className="hero-title">{row.simulations?.name || 'Simulación desconocida'}</h1>
+        <div className="hero-meta">
+          <div className="hero-meta-item">
+            <span className="meta-label">Personaje:</span>
+            <span className="meta-value">{row.simulations?.character || 'N/A'}</span>
+          </div>
+          <div className="hero-meta-item">
+            <Calendar size={16} />
+            <span className="meta-value">{new Date(updatedAt).toLocaleDateString('es-ES', { 
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric' 
+            })}</span>
+          </div>
         </div>
       </div>
 
-      <div className="analysis-summary">
-        <div className="summary-top">
-          <div className="summary-title">
-            <h2 className="analysis-title">{row.simulations?.name || 'Unknown Simulation'}</h2>
-            <div className="analysis-subtitle">{row.simulations?.character || 'N/A'}</div>
+      <div className={`score-hero score-${scoreColor}`}>
+        <div className="score-hero-content">
+          <div className="score-hero-label">Puntuación General</div>
+          <div className="score-hero-value">
+            {analysis?.overall_score ?? '—'}
+            <span className="score-hero-max">/100</span>
           </div>
-          <div className="summary-score">
-            <div className="summary-score-label">Overall</div>
-            <div className="summary-score-value">{analysis?.overall_score ?? '—'}</div>
+          <div className="score-hero-description">
+            {scoreColor === 'green' && '🎉 Excelente desempeño'}
+            {scoreColor === 'yellow' && '👍 Buen desempeño'}
+            {scoreColor === 'red' && '💪 Oportunidad de mejora'}
+            {scoreColor === 'gray' && 'Sin puntuación'}
           </div>
         </div>
       </div>
 
       {!analysis ? (
         <div className="empty-state">
-          <h3>No analysis result</h3>
-          <p>This chat has no stored analysis yet.</p>
+          <h3>Sin resultado de análisis</h3>
+          <p>Este chat aún no tiene un análisis almacenado.</p>
         </div>
       ) : (
         <div className="analysis-content">
-          <div className="panel-grid">
-            <section className="panel">
-              <h3>Strengths</h3>
+          <div className="insights-grid">
+            <section className="insight-card strengths-card">
+              <div className="insight-header">
+                <div className="insight-icon">💪</div>
+                <div>
+                  <h3 className="insight-title">Fortalezas</h3>
+                  <p className="insight-subtitle">Lo que hiciste bien</p>
+                </div>
+              </div>
               {analysis.strengths?.length ? (
-                <ul>
-                  {analysis.strengths.map((s, idx) => <li key={idx}>{s}</li>)}
+                <ul className="insight-list">
+                  {analysis.strengths.map((s, idx) => (
+                    <li key={idx} className="insight-item">
+                      <span className="insight-bullet">✓</span>
+                      {s}
+                    </li>
+                  ))}
                 </ul>
               ) : (
-                <p className="muted">No strengths returned.</p>
+                <p className="muted">No se identificaron fortalezas.</p>
               )}
             </section>
 
-            <section className="panel">
-              <h3>Improvement areas</h3>
+            <section className="insight-card improvements-card">
+              <div className="insight-header">
+                <div className="insight-icon">📈</div>
+                <div>
+                  <h3 className="insight-title">Áreas de Mejora</h3>
+                  <p className="insight-subtitle">Oportunidades de crecimiento</p>
+                </div>
+              </div>
               {analysis.improvement_areas?.length ? (
-                <ul>
-                  {analysis.improvement_areas.map((s, idx) => <li key={idx}>{s}</li>)}
+                <ul className="insight-list">
+                  {analysis.improvement_areas.map((s, idx) => (
+                    <li key={idx} className="insight-item">
+                      <span className="insight-bullet">→</span>
+                      {s}
+                    </li>
+                  ))}
                 </ul>
               ) : (
-                <p className="muted">No improvement areas returned.</p>
+                <p className="muted">No se identificaron áreas de mejora.</p>
               )}
             </section>
           </div>
 
-          <section className="panel">
-            <h3>Skills</h3>
+          <section className="skills-section">
+            <div className="section-header">
+              <div className="section-icon">📊</div>
+              <div>
+                <h2 className="section-title">Evaluación Detallada de Habilidades</h2>
+                <p className="section-subtitle">Análisis profundo de cada competencia evaluada</p>
+              </div>
+            </div>
             {analysis.skills?.length ? (
               <div className="skills-list">
-                {analysis.skills.map((sk) => (
-                  <div key={sk.skill_id || sk.skill_name} className="skill-card">
-                    <div className="skill-header">
-                      <div className="skill-name">
-                        <div className="skill-name-main">{sk.skill_name}</div>
-                        {!!sk.skill_id && <div className="skill-id">{sk.skill_id}</div>}
-                      </div>
-                      <div className="skill-score">{sk.score}</div>
-                    </div>
-                    {!!sk.summary && <div className="skill-summary">{sk.summary}</div>}
-
-                    <div className="skill-grid">
-                      <div>
-                        <div className="skill-subtitle">Signals detected</div>
-                        {sk.signals_detected?.length ? (
-                          <ul>
-                            {sk.signals_detected.map((x, idx) => <li key={idx}>{x}</li>)}
-                          </ul>
-                        ) : (
-                          <div className="muted">None</div>
+                {analysis.skills.map((sk) => {
+                  const skillScore = sk.score || 0;
+                  const skillColor = skillScore >= 80 ? 'green' : skillScore >= 60 ? 'yellow' : 'red';
+                  
+                  return (
+                    <div key={sk.skill_id || sk.skill_name} className={`skill-card skill-${skillColor}`}>
+                      <div className="skill-top">
+                        <div className="skill-header">
+                          <div className="skill-name">
+                            <h3 className="skill-name-main">{sk.skill_name}</h3>
+                            {!!sk.skill_id && <div className="skill-id">ID: {sk.skill_id}</div>}
+                          </div>
+                          <div className={`skill-score score-badge-${skillColor}`}>
+                            <span className="score-number">{sk.score}</span>
+                            <span className="score-label">pts</span>
+                          </div>
+                        </div>
+                        {!!sk.summary && (
+                          <div className="skill-summary">
+                            <div className="summary-icon">💡</div>
+                            <p>{sk.summary}</p>
+                          </div>
                         )}
                       </div>
-                      <div>
-                        <div className="skill-subtitle">Signals missing</div>
-                        {sk.signals_missing?.length ? (
-                          <ul>
-                            {sk.signals_missing.map((x, idx) => <li key={idx}>{x}</li>)}
-                          </ul>
-                        ) : (
-                          <div className="muted">None</div>
-                        )}
+
+                      <div className="skill-details">
+                        <div className="skill-detail-section">
+                          <div className="detail-header">
+                            <span className="detail-icon detected">✓</span>
+                            <h4 className="detail-title">Señales Detectadas</h4>
+                          </div>
+                          {sk.signals_detected?.length ? (
+                            <ul className="detail-list">
+                              {sk.signals_detected.map((x, idx) => <li key={idx}>{x}</li>)}
+                            </ul>
+                          ) : (
+                            <div className="muted">Ninguna</div>
+                          )}
+                        </div>
+
+                        <div className="skill-detail-section">
+                          <div className="detail-header">
+                            <span className="detail-icon missing">✗</span>
+                            <h4 className="detail-title">Señales Faltantes</h4>
+                          </div>
+                          {sk.signals_missing?.length ? (
+                            <ul className="detail-list">
+                              {sk.signals_missing.map((x, idx) => <li key={idx}>{x}</li>)}
+                            </ul>
+                          ) : (
+                            <div className="muted">Ninguna</div>
+                          )}
+                        </div>
+
+                        <div className="skill-detail-section full-width">
+                          <div className="detail-header">
+                            <span className="detail-icon evidence">📝</span>
+                            <h4 className="detail-title">Evidencia</h4>
+                          </div>
+                          {sk.evidence?.length ? (
+                            <ul className="detail-list">
+                              {sk.evidence.map((x, idx) => <li key={idx}>{x}</li>)}
+                            </ul>
+                          ) : (
+                            <div className="muted">Sin evidencia</div>
+                          )}
+                        </div>
                       </div>
                     </div>
-
-                    <div>
-                      <div className="skill-subtitle">Evidence</div>
-                      {sk.evidence?.length ? (
-                        <ul>
-                          {sk.evidence.map((x, idx) => <li key={idx}>{x}</li>)}
-                        </ul>
-                      ) : (
-                        <div className="muted">None</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p className="muted">No skills returned.</p>
+              <p className="muted">No se evaluaron habilidades.</p>
             )}
           </section>
         </div>
