@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Calendar } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import * as Accordion from '@radix-ui/react-accordion';
 import './ChatAnalysisResultPage.css';
 
 type EvaluationJson = {
@@ -234,7 +235,7 @@ export const ChatAnalysisResultPage = () => {
                   <p className="section-subtitle">Revisa la conversación con análisis y sugerencias</p>
                 </div>
               </div>
-              <div className="conversation-list">
+              <Accordion.Root type="multiple" className="conversation-list">
                 {analysis.player_responses_analysis.map((response, idx) => {
                   // Find messages around this turn
                   const messages = Array.isArray(row.messages) ? row.messages : [];
@@ -246,14 +247,20 @@ export const ChatAnalysisResultPage = () => {
                   const assistantMsg = messages[userMsgIndex + 1];
                   
                   return (
-                    <div key={idx} className="conversation-turn">
-                      <div className="turn-header">
-                        <span className="turn-number">Turno {response.turn_number}</span>
-                        {response.context && (
-                          <span className="turn-context">{response.context}</span>
-                        )}
-                      </div>
+                    <Accordion.Item key={idx} value={`turn-${response.turn_number}`} className="conversation-turn">
+                      <Accordion.Header>
+                        <Accordion.Trigger className="turn-header">
+                          <div className="turn-header-left">
+                            <span className="turn-number">Turno {response.turn_number}</span>
+                            {response.context && (
+                              <span className="turn-context">{response.context}</span>
+                            )}
+                          </div>
+                          <span className="turn-arrow">▼</span>
+                        </Accordion.Trigger>
+                      </Accordion.Header>
                       
+                      <Accordion.Content className="accordion-content">
                       {/* Full conversation messages */}
                       <div className="conversation-messages">
                         <div className="chat-message user-message">
@@ -318,10 +325,11 @@ export const ChatAnalysisResultPage = () => {
                           )}
                         </div>
                       </div>
-                    </div>
+                      </Accordion.Content>
+                    </Accordion.Item>
                   );
                 })}
-              </div>
+              </Accordion.Root>
             </section>
           )}
 
