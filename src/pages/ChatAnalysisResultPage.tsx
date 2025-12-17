@@ -16,6 +16,15 @@ type EvaluationJson = {
     evidence: string[];
     summary: string;
   }>;
+  player_responses_analysis?: Array<{
+    turn_number: number;
+    player_message: string;
+    context: string;
+    what_worked: string[];
+    what_didnt_work: string[];
+    improved_version: string;
+    improvement_rationale: string;
+  }>;
   strengths: string[];
   improvement_areas: string[];
 };
@@ -25,6 +34,7 @@ type ChatRow = {
   created_at: string;
   analysis_updated_at?: string | null;
   analysis_result?: any;
+  messages?: any[];
   simulations: {
     name: string;
     character: string;
@@ -53,6 +63,7 @@ export const ChatAnalysisResultPage = () => {
           created_at,
           analysis_updated_at,
           analysis_result,
+          messages,
           simulations(
             name,
             character
@@ -212,6 +223,81 @@ export const ChatAnalysisResultPage = () => {
               )}
             </section>
           </div>
+
+          {/* Conversation with Improvements Section */}
+          {analysis.player_responses_analysis && analysis.player_responses_analysis.length > 0 && (
+            <section className="conversation-section">
+              <div className="section-header">
+                <div className="section-icon">💬</div>
+                <div>
+                  <h2 className="section-title">Conversación y Mejoras</h2>
+                  <p className="section-subtitle">Tu mensaje original vs. versión mejorada</p>
+                </div>
+              </div>
+              <div className="conversation-list">
+                {analysis.player_responses_analysis.map((response, idx) => (
+                  <div key={idx} className="conversation-turn">
+                    <div className="turn-header">
+                      <span className="turn-number">Turno {response.turn_number}</span>
+                      {response.context && (
+                        <span className="turn-context">{response.context}</span>
+                      )}
+                    </div>
+                    
+                    <div className="message-comparison">
+                      <div className="message-original">
+                        <div className="message-label">
+                          <span className="message-icon">📝</span>
+                          Tu Mensaje
+                        </div>
+                        <div className="message-content">
+                          {response.player_message}
+                        </div>
+                        {response.what_worked && response.what_worked.length > 0 && (
+                          <div className="message-feedback positive">
+                            <strong>✓ Qué funcionó:</strong>
+                            <ul>
+                              {response.what_worked.map((item, i) => (
+                                <li key={i}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {response.what_didnt_work && response.what_didnt_work.length > 0 && (
+                          <div className="message-feedback negative">
+                            <strong>✗ Qué no funcionó:</strong>
+                            <ul>
+                              {response.what_didnt_work.map((item, i) => (
+                                <li key={i}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="message-arrow">→</div>
+
+                      <div className="message-improved">
+                        <div className="message-label">
+                          <span className="message-icon">✨</span>
+                          Versión Mejorada
+                        </div>
+                        <div className="message-content improved">
+                          {response.improved_version}
+                        </div>
+                        {response.improvement_rationale && (
+                          <div className="message-rationale">
+                            <strong>💡 Por qué es mejor:</strong>
+                            <p>{response.improvement_rationale}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="skills-section">
             <div className="section-header">
