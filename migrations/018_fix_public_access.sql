@@ -149,3 +149,8 @@ CREATE POLICY chats_update_policy ON chats
       AND simulations.user_id = auth.uid()
     ))
   );
+
+-- Allow public access to chat analysis results (analysis_result column)
+-- This enables anonymous users to view analysis results via /analyses/:id route
+COMMENT ON COLUMN chats.analysis_result IS 'Public analysis result viewable by anyone with chat ID';
+COMMENT ON COLUMN chats.analysis_updated_at IS 'Timestamp when analysis was last updated';

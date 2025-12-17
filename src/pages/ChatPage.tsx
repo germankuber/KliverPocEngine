@@ -559,9 +559,12 @@ export const ChatPage = () => {
       if (updateError) throw updateError;
       
       console.log('✅ Chat analysis completed successfully');
+      
+      // Return the overall score
+      return parsed?.overall_score ?? null;
     } catch (error) {
       console.error('❌ Error analyzing chat:', error);
-      // Don't show error to user, just log it
+      throw error;
     }
   };
 
@@ -1235,6 +1238,56 @@ export const ChatPage = () => {
               </div>
               <h2>Analizando tu conversación</h2>
               <p>Por favor espera mientras evaluamos tu desempeño...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Result Modal */}
+        {showResultModal && (
+          <div className="completion-modal-overlay">
+            <div className="completion-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="score-circle">
+                {analysisScore !== null ? (
+                  <>
+                    <div className="score-value">{analysisScore}</div>
+                    <div className="score-label">/100</div>
+                  </>
+                ) : (
+                  <div className="score-error">N/A</div>
+                )}
+              </div>
+              <h2>Análisis Completado</h2>
+              <p>
+                {analysisScore !== null 
+                  ? `Tu puntuación general es ${analysisScore}/100`
+                  : 'El análisis se completó pero no se pudo obtener la puntuación'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                {isPathMode && pathId && (
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowResultModal(false);
+                      navigate(`/play/${pathId}`);
+                    }}
+                  >
+                    Volver al Path
+                  </button>
+                )}
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowResultModal(false);
+                    if (chatId) {
+                      navigate(`/analyses/${chatId}`);
+                    } else {
+                      navigate('/chats');
+                    }
+                  }}
+                >
+                  Ver Análisis Detallado
+                </button>
+              </div>
             </div>
           </div>
         )}

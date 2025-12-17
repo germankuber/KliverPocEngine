@@ -59,7 +59,9 @@ function AppContent() {
   
   console.log('AppContent: pathname =', location.pathname, 'user =', user?.email, 'loading =', loading);
   
-  const isPublicPath = location.pathname.startsWith('/play/') || location.pathname.startsWith('/play-chat/');
+  const isPublicPath = location.pathname.startsWith('/play/') || 
+                       location.pathname.startsWith('/play-chat/') ||
+                       location.pathname.startsWith('/analyses/');
   const isAuthPath = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/logout';
 
   // Redirect to home if logged in user tries to access login/signup pages
@@ -83,12 +85,12 @@ function AppContent() {
           <Route path="/logout" element={<LogoutPage />} />
           <Route path="/play/:pathId" element={<PathPlayerPage />} />
           <Route path="/play-chat/:id" element={<PublicChatPage />} />
+          <Route path="/analyses/:id" element={<ChatAnalysisResultPage />} />
           
           {/* Protected routes */}
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/chats" element={<ProtectedRoute><ChatListPage /></ProtectedRoute>} />
           <Route path="/analyses" element={<ProtectedRoute><ChatAnalysesPage /></ProtectedRoute>} />
-          <Route path="/analyses/:id" element={<ProtectedRoute><ChatAnalysisResultPage /></ProtectedRoute>} />
           <Route path="/simulations" element={<ProtectedRoute><SimulationPage /></ProtectedRoute>} />
           <Route path="/simulations/new" element={<ProtectedRoute><SimulationPage isNew /></ProtectedRoute>} />
           <Route path="/simulations/:id" element={<ProtectedRoute><SimulationPage /></ProtectedRoute>} />
