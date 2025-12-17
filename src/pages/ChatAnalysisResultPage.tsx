@@ -225,76 +225,102 @@ export const ChatAnalysisResultPage = () => {
           </div>
 
           {/* Conversation with Improvements Section */}
-          {analysis.player_responses_analysis && analysis.player_responses_analysis.length > 0 && (
+          {analysis.player_responses_analysis && analysis.player_responses_analysis.length > 0 && row.messages && (
             <section className="conversation-section">
               <div className="section-header">
                 <div className="section-icon">💬</div>
                 <div>
-                  <h2 className="section-title">Conversación y Mejoras</h2>
-                  <p className="section-subtitle">Tu mensaje original vs. versión mejorada</p>
+                  <h2 className="section-title">Conversación Completa y Mejoras</h2>
+                  <p className="section-subtitle">Revisa la conversación con análisis y sugerencias</p>
                 </div>
               </div>
               <div className="conversation-list">
-                {analysis.player_responses_analysis.map((response, idx) => (
-                  <div key={idx} className="conversation-turn">
-                    <div className="turn-header">
-                      <span className="turn-number">Turno {response.turn_number}</span>
-                      {response.context && (
-                        <span className="turn-context">{response.context}</span>
-                      )}
-                    </div>
-                    
-                    <div className="message-comparison">
-                      <div className="message-original">
-                        <div className="message-label">
-                          <span className="message-icon">📝</span>
-                          Tu Mensaje
-                        </div>
-                        <div className="message-content">
-                          {response.player_message}
-                        </div>
-                        {response.what_worked && response.what_worked.length > 0 && (
-                          <div className="message-feedback positive">
-                            <strong>✓ Qué funcionó:</strong>
-                            <ul>
-                              {response.what_worked.map((item, i) => (
-                                <li key={i}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
+                {analysis.player_responses_analysis.map((response, idx) => {
+                  // Find messages around this turn
+                  const messages = Array.isArray(row.messages) ? row.messages : [];
+                  const userMsgIndex = messages.findIndex((m: any, i: number) => 
+                    m.role === 'user' && i >= (response.turn_number - 1) * 2
+                  );
+                  
+                  const userMsg = messages[userMsgIndex];
+                  const assistantMsg = messages[userMsgIndex + 1];
+                  
+                  return (
+                    <div key={idx} className="conversation-turn">
+                      <div className="turn-header">
+                        <span className="turn-number">Turno {response.turn_number}</span>
+                        {response.context && (
+                          <span className="turn-context">{response.context}</span>
                         )}
-                        {response.what_didnt_work && response.what_didnt_work.length > 0 && (
-                          <div className="message-feedback negative">
-                            <strong>✗ Qué no funcionó:</strong>
-                            <ul>
-                              {response.what_didnt_work.map((item, i) => (
-                                <li key={i}>{item}</li>
-                              ))}
-                            </ul>
+                      </div>
+                      
+                      {/* Full conversation messages */}
+                      <div className="conversation-messages">
+                        <div className="chat-message user-message">
+                          <div className="message-header">
+                            <span className="message-role">👤 Tú</span>
+                          </div>
+                          <div className="message-text">
+                            {response.player_message}
+                          </div>
+                        </div>
+                        
+                        {assistantMsg && (
+                          <div className="chat-message assistant-message">
+                            <div className="message-header">
+                              <span className="message-role">🤖 Personaje</span>
+                            </div>
+                            <div className="message-text">
+                              {typeof assistantMsg.content === 'string' 
+                                ? assistantMsg.content 
+                                : JSON.stringify(assistantMsg.content)}
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      <div className="message-arrow">→</div>
+                      {/* Analysis and improvement */}
+                      <div className="message-analysis">
+                        <div className="analysis-section">
+                          <h4 className="analysis-title">📊 Análisis de tu respuesta</h4>
+                          {response.what_worked && response.what_worked.length > 0 && (
+                            <div className="message-feedback positive">
+                              <strong>✓ Qué funcionó:</strong>
+                              <ul>
+                                {response.what_worked.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {response.what_didnt_work && response.what_didnt_work.length > 0 && (
+                            <div className="message-feedback negative">
+                              <strong>✗ Qué no funcionó:</strong>
+                              <ul>
+                                {response.what_didnt_work.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="message-improved">
-                        <div className="message-label">
-                          <span className="message-icon">✨</span>
-                          Versión Mejorada
-                        </div>
-                        <div className="message-content improved">
-                          {response.improved_version}
-                        </div>
-                        {response.improvement_rationale && (
-                          <div className="message-rationale">
-                            <strong>💡 Por qué es mejor:</strong>
-                            <p>{response.improvement_rationale}</p>
+                        <div className="improvement-section">
+                          <h4 className="improvement-title">✨ Versión Mejorada</h4>
+                          <div className="message-improved-box">
+                            {response.improved_version}
                           </div>
-                        )}
+                          {response.improvement_rationale && (
+                            <div className="message-rationale">
+                              <strong>💡 Por qué es mejor:</strong>
+                              <p>{response.improvement_rationale}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}
