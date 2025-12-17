@@ -628,11 +628,11 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                                                 </span>
                                             </p>
                                         )}
-                                        {latestAnalysis && latestAnalysis.analysis_result?.overall_score !== undefined && (
+                                        {latestAnalysis && (latestAnalysis.analysis_result as any)?.overall_score !== undefined && (
                                             <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <p style={{ color: 'var(--primary)', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <BarChart2 size={16} />
-                                                    Score: {latestAnalysis.analysis_result.overall_score}/100
+                                                    Score: {(latestAnalysis.analysis_result as any).overall_score}/100
                                                 </p>
                                                 <button
                                                     className="btn btn-secondary"

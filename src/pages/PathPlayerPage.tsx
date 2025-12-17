@@ -54,7 +54,7 @@ export const PathPlayerPage = () => {
         simulation_id: string;
         messages: unknown;
         analysis_result?: unknown;
-        simulations: { name: string };
+        simulations: { name: string }[];
     }>>([]);
     const [expandedHistory, setExpandedHistory] = useState<{ [key: string]: boolean }>({});
 
@@ -417,7 +417,7 @@ export const PathPlayerPage = () => {
                                 >
                                   View
                                 </button>
-                                {chat.analysis_result && (
+                                {!!chat.analysis_result && (
                                   <button
                                     onClick={() => navigate(`/analyses/${chat.id}`)}
                                     className="view-analysis-btn"

@@ -54,20 +54,14 @@ export const PathEditorPage = () => {
             if (simsError) throw simsError;
             console.log('Raw simulations data:', sims);
             // Map to handle the characters array from Supabase (returns array, we need single object)
-            const mappedSims = (sims || []).map((sim: {
-                id: string;
-                name: string;
-                characters: { id: string; name: string; description: string }[] | { id: string; name: string; description: string };
-            }) => {
-                console.log('Simulation:', sim.name, 'Characters:', sim.characters);
-                return {
-                    id: sim.id,
-                    name: sim.name,
-                    characters: Array.isArray(sim.characters) && sim.characters.length > 0 
-                        ? sim.characters[0] 
-                        : (sim.characters || undefined)
-                };
-            });
+                        const mappedSims = (sims || []).map((sim: any) => {
+                            const character = Array.isArray(sim.characters) ? sim.characters[0] : sim.characters;
+                            return {
+                                id: sim.id,
+                                name: sim.name,
+                                characters: character || undefined
+                            };
+                        });
             console.log('Mapped simulations:', mappedSims);
             setAvailableSimulations(mappedSims);
 
@@ -106,11 +100,8 @@ export const PathEditorPage = () => {
 
                 setPathSimulations(
                     (pathSims || []).map(ps => {
-                        const sim = ps.simulations as {
-                            id: string;
-                            name: string;
-                            characters: { id: string; name: string; description: string }[] | { id: string; name: string; description: string };
-                        };
+                        const sim = ps.simulations as any;
+                        const character = Array.isArray(sim.characters) ? sim.characters[0] : sim.characters;
                         return {
                             simulation_id: ps.simulation_id,
                             order_index: ps.order_index,
@@ -118,9 +109,7 @@ export const PathEditorPage = () => {
                             simulation: {
                                 id: sim.id,
                                 name: sim.name,
-                                characters: Array.isArray(sim.characters) && sim.characters.length > 0
-                                    ? sim.characters[0]
-                                    : (sim.characters || undefined)
+                                characters: character || undefined
                             }
                         };
                     })

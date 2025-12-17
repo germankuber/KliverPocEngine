@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('user_id', userId)
         .single();
       
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as Awaited<ReturnType<typeof fetchPromise>>;
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as Awaited<typeof fetchPromise>;
       
       console.log('auth.tsx: fetchUserRole response - data =', data, 'error =', error);
       

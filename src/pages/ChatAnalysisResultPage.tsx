@@ -64,7 +64,7 @@ type ChatRow = {
   simulations: {
     name: string;
     character: string;
-  };
+  }[];
 };
 
 export const ChatAnalysisResultPage = () => {
@@ -164,11 +164,11 @@ export const ChatAnalysisResultPage = () => {
           <BarChart3 size={20} />
           Reporte de Análisis Completo
         </div>
-        <h1 className="hero-title">{row.simulations?.name || 'Simulación desconocida'}</h1>
+        <h1 className="hero-title">{row.simulations?.[0]?.name || 'Simulación desconocida'}</h1>
         <div className="hero-meta">
           <div className="hero-meta-item">
             <span className="meta-label">Personaje:</span>
-            <span className="meta-value">{row.simulations?.character || 'N/A'}</span>
+            <span className="meta-value">{row.simulations?.[0]?.character || 'N/A'}</span>
           </div>
           <div className="hero-meta-item">
             <Calendar size={16} />

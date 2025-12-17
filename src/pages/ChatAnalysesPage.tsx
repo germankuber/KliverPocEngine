@@ -20,7 +20,7 @@ type ChatAnalysisRow = {
   simulations: {
     name: string;
     character: string;
-  };
+  }[];
 };
 
 export const ChatAnalysesPage = () => {
@@ -108,8 +108,8 @@ export const ChatAnalysesPage = () => {
               <Link key={row.id} to={`/analyses/${row.id}`} className="analysis-card">
                 <div className="analysis-card-top">
                   <div className="analysis-card-title">
-                    <h3>{row.simulations?.name || 'Unknown Simulation'}</h3>
-                    <div className="analysis-card-subtitle">{row.simulations?.character || 'N/A'}</div>
+                    <h3>{row.simulations?.[0]?.name || 'Unknown Simulation'}</h3>
+                    <div className="analysis-card-subtitle">{row.simulations?.[0]?.character || 'N/A'}</div>
                   </div>
                   <div className="analysis-card-score">
                     <div className="score-label">Overall</div>

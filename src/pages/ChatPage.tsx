@@ -24,20 +24,31 @@ export const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [simulationData, setSimulationData] = useState<{
+    id?: string;
     name?: string;
     objective?: string;
+    context?: string;
     character?: string;
+    character_keypoints?: string[];
+    player_keypoints?: string[];
     setting_id?: string;
+    max_interactions?: number;
     characters?: { name?: string; description?: string };
   } | null>(null);
   const [appSettings, setAppSettings] = useState<{
     max_interactions?: number;
+    api_key?: string;
+    model?: string;
   } | null>(null);
   const [globalPrompts, setGlobalPrompts] = useState<{
     system_prompt?: string;
     evaluation_rule_prompt?: string;
     evaluator_prompt?: string;
     player_evaluator_prompt?: string;
+    langsmith_enabled?: boolean;
+    langsmith_api_key?: string;
+    langsmith_project?: string;
+    character_analysis_prompt?: string;
   } | null>(null);
   const [rulesTracker, setRulesTracker] = useState<{[key: string]: boolean}>({});
   const [showRulesSidebar, setShowRulesSidebar] = useState(true);
@@ -534,6 +545,11 @@ export const ChatPage = () => {
 
       console.log('📤 Evaluator message length:', evaluatorUserMessage.length);
 
+      if (!appSettings?.api_key) {
+        console.error("API Key is missing for analysis");
+        return null;
+      }
+
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
 
       // Build configuration based on model type
@@ -545,8 +561,8 @@ export const ChatPage = () => {
         temperature?: number;
         modelKwargs?: { response_format: { type: string } };
       } = {
-        apiKey: appSettings.api_key?.trim(),
-        openAIApiKey: appSettings.api_key?.trim(),
+        apiKey: appSettings.api_key.trim(),
+        openAIApiKey: appSettings.api_key.trim(),
         modelName: appSettings.model || 'gpt-4o',
         dangerouslyAllowBrowser: true
       };
@@ -832,14 +848,14 @@ export const ChatPage = () => {
     setIsLoading(true);
 
     // Evaluate player message if player_keypoints_evaluation_prompt is defined
-    if (globalPrompts?.player_keypoints_evaluation_prompt && 
+    if (globalPrompts?.player_evaluator_prompt && 
         simulationData.player_keypoints && 
         simulationData.player_keypoints.length > 0) {
       console.log("🎯 Evaluating player message...");
       const playerEvaluationResult = await evaluateRules(
         input, 
         simulationData, 
-        globalPrompts.player_keypoints_evaluation_prompt,
+        globalPrompts.player_evaluator_prompt,
         'player'
       );
       
@@ -929,10 +945,10 @@ export const ChatPage = () => {
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {
         systemMessageContent += `\n\nCharacter: ${characterDescription}`;
       }
-      if (!systemMessageContent.includes(simulationData.objective) && simulationData.objective) {
+      if (simulationData.objective && !systemMessageContent.includes(simulationData.objective)) {
         systemMessageContent += `\n\nObjective: ${simulationData.objective}`;
       }
-      if (!systemMessageContent.includes(simulationData.context) && simulationData.context) {
+      if (simulationData.context && !systemMessageContent.includes(simulationData.context)) {
         systemMessageContent += `\n\nContext: ${simulationData.context}`;
       }
       if (characterKeypoints && !systemMessageContent.includes(characterKeypoints)) {
