@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { CheckCircle, Circle, Lock, Play, RotateCcw } from 'lucide-react';
+import { CheckCircle, Circle, Play, RotateCcw } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './PathPlayerPage.css';
 
@@ -48,6 +48,8 @@ export const PathPlayerPage = () => {
     const [progress, setProgress] = useState<{ [key: string]: PathProgress }>({});
     const [showIdentifierPrompt, setShowIdentifierPrompt] = useState(false);
     const [selectedSimulation, setSelectedSimulation] = useState<PathSimulation | null>(null);
+    const [userChats, setUserChats] = useState<any[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {
         loadPath();
@@ -100,6 +102,7 @@ export const PathPlayerPage = () => {
         if (stored) {
             setUserIdentifier(stored);
             loadProgress(stored);
+            loadUserChats(stored);
         } else {
             setShowIdentifierPrompt(true);
         }
@@ -110,6 +113,7 @@ export const PathPlayerPage = () => {
         setUserIdentifier(identifier);
         setShowIdentifierPrompt(false);
         loadProgress(identifier);
+        loadUserChats(identifier);
     };
 
     const loadProgress = async (identifier: string) => {
@@ -139,20 +143,37 @@ export const PathPlayerPage = () => {
         }
     };
 
+    const loadUserChats = async (identifier: string) => {
+        if (!pathId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('chats')
+                .select(`
+                    id,
+                    created_at,
+                    simulation_id,
+                    messages,
+                    simulations(
+                        name
+                    )
+                `)
+                .eq('path_id', pathId)
+                .eq('user_identifier', identifier)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setUserChats(data || []);
+        } catch (error) {
+            console.error('Error loading user chats:', error);
+        }
+    };
+
     const getSimulationStatus = (pathSim: PathSimulation, index: number) => {
         const prog = progress[pathSim.simulation_id];
 
         if (prog?.completed) {
             return 'completed';
-        }
-
-        // Check if previous simulation is completed
-        if (index > 0) {
-            const prevPathSim = path?.path_simulations[index - 1];
-            const prevProg = prevPathSim ? progress[prevPathSim.simulation_id] : null;
-            if (!prevProg?.completed) {
-                return 'locked';
-            }
         }
 
         if (prog && prog.attempts_used >= pathSim.max_attempts) {
@@ -179,11 +200,6 @@ export const PathPlayerPage = () => {
             path?.path_simulations.indexOf(pathSim) || 0
         );
 
-        if (status === 'locked') {
-            alert('Complete the previous simulation first');
-            return;
-        }
-
         if (status === 'failed') {
             alert('Maximum attempts reached for this simulation');
             return;
@@ -196,6 +212,8 @@ export const PathPlayerPage = () => {
                 .insert({
                     simulation_id: pathSim.simulation_id,
                     messages: [],
+                    user_identifier: userIdentifier,
+                    path_id: pathId,
                 })
                 .select()
                 .single();
@@ -204,7 +222,8 @@ export const PathPlayerPage = () => {
 
             // Update or create progress
             const currentProgress = progress[pathSim.simulation_id];
-            const newAttemptsUsed = (currentProgress?.attempts_used || 0) + 1;
+            // Si está completada, reiniciar el conteo, sino incrementar
+            const newAttemptsUsed = currentProgress?.completed ? 1 : (currentProgress?.attempts_used || 0) + 1;
 
             const { error: progressError } = await supabase
                 .from('path_progress')
@@ -290,6 +309,12 @@ export const PathPlayerPage = () => {
                     <div className="user-info">
                         Playing as: <strong>{userIdentifier}</strong>
                         <button
+                            onClick={() => setShowHistory(!showHistory)}
+                            className="history-btn"
+                        >
+                            📝 History ({userChats.length})
+                        </button>
+                        <button
                             onClick={() => {
                                 localStorage.removeItem('path_user_identifier');
                                 window.location.reload();
@@ -303,6 +328,35 @@ export const PathPlayerPage = () => {
                 )}
             </div>
 
+            {showHistory && userChats.length > 0 && (
+                <div className="chat-history-section">
+                    <h2>Your Chat History</h2>
+                    <div className="chat-history-list">
+                        {userChats.map((chat) => {
+                            const messageCount = Array.isArray(chat.messages) ? chat.messages.length : 0;
+                            const createdDate = new Date(chat.created_at).toLocaleString();
+                            
+                            return (
+                                <div key={chat.id} className="chat-history-item">
+                                    <div className="chat-history-info">
+                                        <h4>{chat.simulations?.name || 'Unknown Simulation'}</h4>
+                                        <p className="chat-history-meta">
+                                            {createdDate} · {messageCount} messages
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate(`/play-chat/${chat.id}?pathId=${pathId}`)}
+                                        className="view-chat-btn"
+                                    >
+                                        View Chat
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             <div className="simulations-track">
                 {path.path_simulations.map((pathSim, index) => {
                     const status = getSimulationStatus(pathSim, index);
@@ -313,8 +367,7 @@ export const PathPlayerPage = () => {
                         <div key={pathSim.id} className={`simulation-card ${status}`}>
                             <div className="simulation-status-icon">
                                 {status === 'completed' && <CheckCircle size={32} />}
-                                {status === 'locked' && <Lock size={32} />}
-                                {(status === 'available' || status === 'failed') && (
+                                {(status === 'available' || status === 'failed' || status === 'retry') && (
                                     <Circle size={32} />
                                 )}
                             </div>
@@ -346,14 +399,9 @@ export const PathPlayerPage = () => {
                                             {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining
                                         </span>
                                     )}
-                                    {status === 'locked' && (
-                                        <span className="status-badge locked-badge">
-                                            🔒 Complete previous step
-                                        </span>
-                                    )}
                                 </div>
 
-                {status !== 'locked' && status !== 'failed' && (
+                {status !== 'failed' && (
                   <button
                     onClick={() => handleStartSimulation(pathSim)}
                     className="start-simulation-btn"
