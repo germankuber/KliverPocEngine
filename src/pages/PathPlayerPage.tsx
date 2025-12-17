@@ -233,6 +233,9 @@ export const PathPlayerPage = () => {
                     user_identifier: userIdentifier,
                     attempts_used: newAttemptsUsed,
                     completed: false,
+                    last_attempt_failed: false,
+                }, {
+                    onConflict: 'path_id,simulation_id,user_identifier'
                 });
 
             if (progressError) throw progressError;

@@ -37,6 +37,29 @@
   margin: 0;
 }
 
+/* Back to Path Button */
+.back-to-path-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.back-to-path-btn:hover {
+  background-color: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateX(-2px);
+}
+
 /* Rules Toggle Button - Hidden since sidebar is always visible */
 .rules-toggle-btn {
   display: none;

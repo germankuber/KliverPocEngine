@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
+import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX, Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
@@ -831,6 +831,15 @@ export const ChatPage = () => {
     <div className="chat-page">
       <div className="chat-header">
         <div className="chat-title">
+          {isPathMode && pathId && (
+            <button
+              className="back-to-path-btn"
+              onClick={() => navigate(`/play/${pathId}`)}
+              title="Back to path"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <h1><Bot className="text-primary" /> {simulationData?.name || "Simulation"}</h1>
           <p>Character: {simulationData?.character}</p>
         </div>
