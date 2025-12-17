@@ -425,6 +425,20 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             )}
                         </div>
 
+                        <div className="info-box">
+                            <h4>OBJECTIVE</h4>
+                            <ul>
+                                <li>Define qué quiere lograr el personaje en esta interacción (no qué quieres lograr tú con el entrenamiento):
+                                    <ul>
+                                        <li>"Obtener una solución que funcione hoy, sin gasto adicional"</li>
+                                        <li>"Entender por qué pasó esto y asegurarme de que no vuelva a ocurrir"</li>
+                                        <li>"Conseguir descuento o compensación por el tiempo perdido"</li>
+                                    </ul>
+                                </li>
+                                <li>El objetivo debe ser específico y realista — algo que una persona real perseguiría naturalmente en esa conversación. Esto evita que el personaje deambule sin dirección.</li>
+                            </ul>
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="objective">Objective</label>
                             <p className="form-helper-text">The primary goal the AI should achieve in this simulation.</p>
@@ -438,6 +452,18 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             {errors.objective && <span className="error-msg">{errors.objective.message}</span>}
                         </div>
 
+                        <div className="info-box">
+                            <h4>CONTEXT</h4>
+                            <ul>
+                                <li>Describe el "ahora" con detalles sensoriales y situacionales, no conceptuales:
+                                    <ul>
+                                        <li>En lugar de "Estás teniendo un problema" → "Hace 3 días tu teléfono no carga. Ya probaste 2 cargadores diferentes. Es viernes a las 18:00 y tienes reunión importante el lunes"</li>
+                                        <li>Incluye: tiempo transcurrido, emociones actuales (frustración, urgencia, curiosidad), qué ha intentado ya, quién es la otra persona en el diálogo (si aplica)</li>
+                                    </ul>
+                                </li>
+                                <li>El contexto crea la lógica detrás de por qué el personaje está allí y qué estado emocional tiene.</li>
+                            </ul>
+                        </div>
                         <div className="form-group">
                             <label htmlFor="context">Context <span style={{ fontWeight: 'normal', color: '#9ca3af' }}>(Optional)</span></label>
                             <p className="form-helper-text">Additional background or situational information.</p>
@@ -468,6 +494,16 @@ export const SimulationPage = ({ isNew }: { isNew?: boolean } = {}) => {
                             {errors.maxInteractions && <span className="error-msg">{errors.maxInteractions.message}</span>}
                         </div>
 
+                        <div className="info-box">
+                            <h4>KEYPOINTS</h4>
+                            <p>Aquí va la información que el personaje SABE sobre sí mismo pero NO menciona a menos que le pregunten directamente:</p>
+                            <ul>
+                                <li><strong>Datos objetivos:</strong> "Compré el teléfono hace 4 meses, está fuera de garantía, me costó $800"</li>
+                                <li><strong>Hechos que podrían ser relevantes:</strong> "El cargador original se me rompió porque mi gato lo masticó"</li>
+                                <li><strong>Información que podría cambiar cómo alguien responde:</strong> "No soy técnico, no entiendo mucho de electrónica"</li>
+                                <li><strong>Detalles que revelarían contexto:</strong> "Trabajo en finanzas, así que el dinero es sensible"</li>
+                            </ul>
+                        </div>
                         <div className="form-group">
                             <label>Character Keypoints</label>
                             <p className="form-helper-text">Facts that the character must mention during the conversation.</p>

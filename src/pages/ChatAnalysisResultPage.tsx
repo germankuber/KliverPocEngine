@@ -4,7 +4,27 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Calendar } from 'lucide-react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import * as Accordion from '@radix-ui/react-accordion';
+import { Radar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import './ChatAnalysisResultPage.css';
+
+// Register Chart.js components
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
 
 type EvaluationJson = {
   overall_score: number;
@@ -184,6 +204,89 @@ export const ChatAnalysisResultPage = () => {
         </div>
       ) : (
         <div className="analysis-content">
+          {/* Radar Chart Section */}
+          {analysis.skills && analysis.skills.length > 0 && (
+            <section className="radar-chart-section">
+              <div className="section-header">
+                <div className="section-icon">📊</div>
+                <div>
+                  <h2 className="section-title">Resumen Visual de Habilidades</h2>
+                  <p className="section-subtitle">Visualización comparativa de tu desempeño</p>
+                </div>
+              </div>
+              <div className="radar-chart-container">
+                <Radar
+                  data={{
+                    labels: analysis.skills.map(skill => skill.skill_name),
+                    datasets: [
+                      {
+                        label: 'Tu Puntuación',
+                        data: analysis.skills.map(skill => skill.score),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                      r: {
+                        beginAtZero: true,
+                        max: 5,
+                        min: 0,
+                        ticks: {
+                          stepSize: 1,
+                          font: {
+                            size: 12,
+                          },
+                          backdropColor: 'transparent',
+                        },
+                        pointLabels: {
+                          font: {
+                            size: 14,
+                            weight: 'bold',
+                          },
+                          color: '#374151',
+                          callback: function(label, index) {
+                            const score = analysis.skills[index]?.score || 0;
+                            return `${label}\n(${score})`;
+                          },
+                        },
+                        grid: {
+                          color: 'rgba(0, 0, 0, 0.1)',
+                        },
+                      },
+                    },
+                    plugins: {
+                      legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                          font: {
+                            size: 14,
+                          },
+                        },
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: (context) => {
+                            return `${context.dataset.label}: ${context.parsed.r}/5`;
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </section>
+          )}
+
           <div className="insights-grid">
             <section className="insight-card strengths-card">
               <div className="insight-header">

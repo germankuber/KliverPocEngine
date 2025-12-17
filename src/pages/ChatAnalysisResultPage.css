@@ -148,6 +148,21 @@
   gap: 2rem;
 }
 
+/* Radar Chart Section */
+.radar-chart-section {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.radar-chart-container {
+  max-width: 600px;
+  margin: 2rem auto 0;
+  padding: 1rem;
+}
+
 .insights-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(450px, 100%), 1fr));
