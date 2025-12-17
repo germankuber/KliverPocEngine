@@ -350,8 +350,9 @@ export const ChatPage = () => {
       const simData = chatData.simulations;
       setSimulationData(simData);
 
-      // Show context modal when chat is loaded and has context/objective
-      if (simData?.context || simData?.objective) {
+      // Show context modal only when chat is loaded, has context/objective, and has NO messages yet
+      const hasMessages = chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0;
+      if ((simData?.context || simData?.objective) && !hasMessages) {
         setShowContextModal(true);
       }
 
@@ -367,6 +368,19 @@ export const ChatPage = () => {
         simData.player_keypoints?.forEach((_: unknown, index: number) => {
           initialTracker[`player_keypoint_${index + 1}`] = false;
         });
+        
+        // Check existing messages for already completed keypoints
+        if (chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0) {
+          chatData.messages.forEach((message: Message) => {
+            if (message.matchedRules && Array.isArray(message.matchedRules)) {
+              message.matchedRules.forEach((ruleId: string) => {
+                if (initialTracker.hasOwnProperty(ruleId)) {
+                  initialTracker[ruleId] = true;
+                }
+              });
+            }
+          });
+        }
         
         setRulesTracker(initialTracker);
       }
