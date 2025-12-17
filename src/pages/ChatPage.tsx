@@ -951,7 +951,7 @@ export const ChatPage = () => {
             </div>
           ) : (
             messages.map((msg) => {
-              const hasMatchedRules = msg.role === 'assistant' && msg.matchedRules && msg.matchedRules.length > 0;
+              const hasMatchedRules = msg.matchedRules && msg.matchedRules.length > 0;
               return (
                 <div key={msg.id} className={`message-wrapper ${msg.role} ${hasMatchedRules ? 'has-matched-rules' : ''}`}>
                   <div className="message-avatar">
@@ -966,7 +966,7 @@ export const ChatPage = () => {
                         </span>
                       )}
                     </div>
-                    {msg.role === 'assistant' && msg.matchedRules !== undefined && (
+                    {msg.matchedRules !== undefined && (
                       <div className="rules-evaluation-compact">
                         {msg.matchedRules.length > 0 ? (
                           <div className="rules-matched-compact">
@@ -976,7 +976,7 @@ export const ChatPage = () => {
                         ) : (
                           <div className="rules-not-matched-compact">
                             <span className="rules-icon">⚠️</span>
-                            <span className="rules-text">No rules matched</span>
+                            <span className="rules-text">No keypoints matched</span>
                           </div>
                         )}
                       </div>
