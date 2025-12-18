@@ -14,6 +14,7 @@ type Message = {
   timestamp: Date;
   evaluationResult?: string;
   matchedRules?: string[];
+  mood_level?: number;
 };
 
 export const ChatPage = () => {
@@ -34,7 +35,7 @@ export const ChatPage = () => {
     player_keypoints?: string[];
     setting_id?: string;
     max_interactions?: number;
-    characters?: { name?: string; description?: string };
+    characters?: { name?: string; description?: string; mood?: string; intensity?: number };
   } | null>(null);
   const [appSettings, setAppSettings] = useState<{
     max_interactions?: number;
@@ -71,6 +72,7 @@ export const ChatPage = () => {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [showContextModal, setShowContextModal] = useState(false);
   const [contextModalStep, setContextModalStep] = useState(1);
+  const [currentMoodLevel, setCurrentMoodLevel] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -326,7 +328,7 @@ export const ChatPage = () => {
           *,
           simulations (
             *,
-            characters(id, name, description)
+            characters(id, name, description, mood, intensity)
           )
         `)
         .eq('id', id)
@@ -351,6 +353,21 @@ export const ChatPage = () => {
 
       const simData = chatData.simulations;
       setSimulationData(simData);
+
+      // Initialize mood level from character or from last message
+      if (chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0) {
+        // Find the last assistant message with mood_level
+        const lastAssistantMessage = [...chatData.messages].reverse().find(
+          (m: Message) => m.role === 'assistant' && m.mood_level !== undefined
+        );
+        if (lastAssistantMessage && lastAssistantMessage.mood_level !== undefined) {
+          setCurrentMoodLevel(lastAssistantMessage.mood_level);
+        } else {
+          setCurrentMoodLevel(simData.characters?.intensity || 50);
+        }
+      } else {
+        setCurrentMoodLevel(simData.characters?.intensity || 50);
+      }
 
       // Show context modal only when chat is loaded, has description, and has NO messages yet
       const hasMessages = chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0;
@@ -958,6 +975,7 @@ export const ChatPage = () => {
         dangerouslyAllowBrowser: true
       });
 
+      // No need for withStructuredOutput, the response_format handles it
       const characterKeypoints = simulationData.character_keypoints && Array.isArray(simulationData.character_keypoints)
         ? simulationData.character_keypoints.map((k: string, index: number) => `${index + 1}. ${k}`).join("\n")
         : "";
@@ -967,13 +985,18 @@ export const ChatPage = () => {
 
       // Get character description from relation or fallback to legacy field
       const characterDescription = simulationData.characters?.description || simulationData.character || "";
+      const characterMood = simulationData.characters?.mood || "cooperative";
+      // Use current mood level (from last message) or initial character intensity
+      const characterIntensity = currentMoodLevel ?? simulationData.characters?.intensity ?? 50;
 
       // Replace wildcards - solo los que existen en el template
       systemMessageContent = systemMessageContent
         .replace(/{{CHARACTER}}/g, characterDescription)
         .replace(/{{OBJECTIVE}}/g, simulationData.objective || "")
         .replace(/{{CONTEXT}}/g, simulationData.context || "")
-        .replace(/{{RULES}}/g, characterKeypoints);
+        .replace(/{{RULES}}/g, characterKeypoints)
+        .replace(/{{MOOD}}/g, characterMood)
+        .replace(/{{MOOD_LEVEL}}/g, String(characterIntensity));
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {
@@ -993,35 +1016,26 @@ export const ChatPage = () => {
         ...updatedMessages.map(m => m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content))
       ];
 
-      // Create a temporary bot message for streaming
+      // Create a temporary bot message to show loading state
       const botMessageId = (Date.now() + 1).toString();
       const botMessage: Message = {
         id: botMessageId,
         role: 'assistant',
-        content: '',
+        content: '...',
         timestamp: new Date()
       };
 
-      // Add the empty bot message to UI immediately
+      // Add the loading bot message to UI immediately
       setMessages(prev => [...prev, botMessage]);
 
-      const stream = await chat.stream(history);
-      let fullContent = "";
+      // Get simple text response (no JSON parsing needed)
+      const response = await chat.invoke(history);
+      const displayContent = response.content as string;
 
-      for await (const chunk of stream) {
-        const content = chunk.content as string;
-        if (content) {
-          fullContent += content;
-          setMessages(prev => prev.map(msg =>
-            msg.id === botMessageId
-              ? { ...msg, content: fullContent }
-              : msg
-          ));
-        }
-      }
-
-      // Once complete, update the message with full content
-      let finalBotMessage = { ...botMessage, content: fullContent };
+      let finalBotMessage = { 
+        ...botMessage, 
+        content: displayContent
+      };
 
       // Evaluate character response if character_keypoints_evaluation_prompt is defined
       if (globalPrompts?.character_keypoints_evaluation_prompt && 
@@ -1029,7 +1043,7 @@ export const ChatPage = () => {
           simulationData.character_keypoints.length > 0) {
         console.log("🤖 Evaluating character response...");
         const evaluationResult = await evaluateRules(
-          fullContent, 
+          displayContent, 
           simulationData, 
           globalPrompts.character_keypoints_evaluation_prompt,
           'character'
@@ -1044,8 +1058,8 @@ export const ChatPage = () => {
       saveMessages(finalMessages);
 
       // If voice mode is enabled, play the response
-      if (voiceEnabled && fullContent) {
-        await textToSpeech(fullContent);
+      if (voiceEnabled && displayContent) {
+        await textToSpeech(displayContent);
       }
 
     } catch (error) {
@@ -1095,6 +1109,50 @@ export const ChatPage = () => {
           )}
           <h1><Bot className="text-primary" /> {simulationData?.name || "Simulation"}</h1>
           <p>Character: {simulationData?.character}</p>
+          {simulationData?.characters && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.75rem', 
+              marginTop: '0.5rem',
+              fontSize: '0.875rem'
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                padding: '0.375rem 0.75rem',
+                borderRadius: '8px',
+                backgroundColor: simulationData.characters.mood === 'angry' ? '#fee2e2' : '#dbeafe',
+              }}>
+                <span style={{ fontWeight: 600, color: '#64748b' }}>Mood:</span>
+                <span style={{ 
+                  textTransform: 'capitalize',
+                  color: simulationData.characters.mood === 'angry' ? '#dc2626' : '#2563eb',
+                  fontWeight: 600
+                }}>
+                  {simulationData.characters.mood || 'cooperative'}
+                </span>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                padding: '0.375rem 0.75rem',
+                borderRadius: '8px',
+                backgroundColor: '#f3e8ff',
+              }}>
+                <span style={{ fontWeight: 600, color: '#64748b' }}>Level:</span>
+                <span style={{ 
+                  color: '#7c3aed',
+                  fontWeight: 700,
+                  minWidth: '2rem',
+                  textAlign: 'center'
+                }}>
+                  {currentMoodLevel ?? simulationData.characters.intensity ?? 50}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         <div className="chat-header-actions">
           {((simulationData?.character_keypoints && simulationData.character_keypoints.length > 0) ||

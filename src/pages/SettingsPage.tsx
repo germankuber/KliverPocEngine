@@ -29,6 +29,7 @@ type GlobalPrompts = {
   character_keypoints_evaluation_prompt: string;
   character_analysis_prompt: string;
   player_keypoints_evaluation_prompt: string;
+  mood_evaluator_prompt?: string;
   langsmith_api_key?: string;
   langsmith_project?: string;
   langsmith_enabled?: boolean;
@@ -106,6 +107,7 @@ export const SettingsPage = () => {
           character_keypoints_evaluation_prompt: globalPrompts.character_keypoints_evaluation_prompt,
           character_analysis_prompt: globalPrompts.character_analysis_prompt || '',
           player_keypoints_evaluation_prompt: globalPrompts.player_keypoints_evaluation_prompt || '',
+          mood_evaluator_prompt: globalPrompts.mood_evaluator_prompt || '',
           langsmith_api_key: globalPrompts.langsmith_api_key || '',
           langsmith_project: globalPrompts.langsmith_project || '',
           langsmith_enabled: globalPrompts.langsmith_enabled || false,
@@ -344,6 +346,31 @@ export const SettingsPage = () => {
                       value={globalPrompts.player_keypoints_evaluation_prompt || ''}
                       onChange={(value) => setGlobalPrompts({...globalPrompts, player_keypoints_evaluation_prompt: value})}
                       placeholder="e.g., Evaluate if the player mentioned all required keypoints appropriately..."
+                      rows={15}
+                    />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
+
+              {/* Mood Evaluator Prompt Accordion Item */}
+              <Accordion.Item value="mood-evaluator-prompt" className="accordion-item">
+                <Accordion.Header className="accordion-header">
+                  <Accordion.Trigger className="accordion-trigger">
+                    <span>Mood Evaluator Prompt</span>
+                    <ChevronDown className="accordion-chevron" />
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="accordion-content">
+                  <div className="form-group">
+                    <p className="form-helper-text">
+                      Evaluation criteria for analyzing the mood and emotional state during conversations.
+                      This prompt is used to evaluate the emotional tone and sentiment of the interaction.
+                    </p>
+                    <HighlightedTextarea
+                      id="moodEvaluatorPrompt"
+                      value={globalPrompts.mood_evaluator_prompt || ''}
+                      onChange={(value) => setGlobalPrompts({...globalPrompts, mood_evaluator_prompt: value})}
+                      placeholder="e.g., Analyze the emotional tone and mood throughout the conversation..."
                       rows={15}
                     />
                   </div>
