@@ -12,12 +12,16 @@ import './CharactersPage.css';
 type CharacterInputs = {
   name: string;
   description: string;
+  mood: string;
+  intensity: number;
 };
 
 type Character = {
   id: string;
   name: string;
   description: string;
+  mood?: string;
+  intensity?: number;
   created_at: string;
 };
 
@@ -32,12 +36,16 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CharacterInputs>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CharacterInputs>({
     defaultValues: {
       name: "",
-      description: ""
+      description: "",
+      mood: "cooperative",
+      intensity: 50
     }
   });
+
+  const intensityValue = watch("intensity");
 
   const showForm = isNew || !!id;
 
@@ -56,6 +64,8 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
       if (char) {
         setValue('name', char.name);
         setValue('description', char.description);
+        setValue('mood', char.mood || 'cooperative');
+        setValue('intensity', char.intensity || 50);
       }
     }
   }, [id, isNew, characters, setValue, reset]);
@@ -88,6 +98,8 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .update({
             name: formData.name,
             description: formData.description,
+            mood: formData.mood,
+            intensity: formData.intensity,
             updated_at: new Date().toISOString(),
             user_id: user?.id
           })
@@ -102,6 +114,8 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
           .insert({
             name: formData.name,
             description: formData.description,
+            mood: formData.mood,
+            intensity: formData.intensity,
             user_id: user?.id
           });
 
@@ -229,6 +243,47 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
               {errors.description && <span className="error-msg">{errors.description.message}</span>}
             </div>
 
+            <div className="form-group">
+              <label htmlFor="mood">Mood</label>
+              <p className="form-helper-text">Select the character's general attitude.</p>
+              <select
+                id="mood"
+                {...register("mood", { required: "Mood is required" })}
+                className={`form-input ${errors.mood ? 'error' : ''}`}
+              >
+                <option value="cooperative">Cooperative</option>
+                <option value="angry">Angry</option>
+              </select>
+              {errors.mood && <span className="error-msg">{errors.mood.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="intensity">Intensity: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{intensityValue}</span></label>
+              <p className="form-helper-text">Adjust the intensity level (30-100).</p>
+              <div style={{ padding: '1rem 0' }}>
+                <input
+                  id="intensity"
+                  type="range"
+                  min="30"
+                  max="100"
+                  step="10"
+                  {...register("intensity", { required: true, min: 30, max: 100 })}
+                  className="form-range"
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', fontWeight: '500' }}>
+                  <span>30</span>
+                  <span>40</span>
+                  <span>50</span>
+                  <span>60</span>
+                  <span>70</span>
+                  <span>80</span>
+                  <span>90</span>
+                  <span>100</span>
+                </div>
+              </div>
+              {errors.intensity && <span className="error-msg">{errors.intensity.message}</span>}
+            </div>
+
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={isCreating}>
                 {id && !isNew ? (
@@ -269,6 +324,33 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
                   </div>
                   <div className="sim-card-body">
                     <p className="character-description">{char.description}</p>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', fontSize: '0.875rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Mood:</span>
+                        <span style={{ 
+                          textTransform: 'capitalize',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '12px',
+                          backgroundColor: char.mood === 'angry' ? '#fee2e2' : '#dbeafe',
+                          color: char.mood === 'angry' ? '#dc2626' : '#2563eb',
+                          fontWeight: 500
+                        }}>
+                          {char.mood || 'cooperative'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Intensity:</span>
+                        <span style={{ 
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '12px',
+                          backgroundColor: '#f3e8ff',
+                          color: '#7c3aed',
+                          fontWeight: 600
+                        }}>
+                          {char.intensity || 50}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="sim-card-footer">
                     <span className="sim-date">
