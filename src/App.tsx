@@ -13,6 +13,7 @@ import { PathEditorPage } from './pages/PathEditorPage';
 import { PathPlayerPage } from './pages/PathPlayerPage';
 import { PublicChatPage } from './pages/PublicChatPage';
 import { CharactersPage } from './pages/CharactersPage';
+import { MoodsPage } from './pages/MoodsPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { LogoutPage } from './pages/LogoutPage';
@@ -97,6 +98,9 @@ function AppContent() {
           <Route path="/characters" element={<ProtectedRoute><CharactersPage /></ProtectedRoute>} />
           <Route path="/characters/new" element={<ProtectedRoute><CharactersPage isNew /></ProtectedRoute>} />
           <Route path="/characters/:id" element={<ProtectedRoute><CharactersPage /></ProtectedRoute>} />
+          <Route path="/moods" element={<ProtectedRoute><MoodsPage /></ProtectedRoute>} />
+          <Route path="/moods/new" element={<ProtectedRoute><MoodsPage isNew /></ProtectedRoute>} />
+          <Route path="/moods/edit/:id" element={<ProtectedRoute><MoodsPage /></ProtectedRoute>} />
           <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/paths" element={<ProtectedRoute><PathsPage /></ProtectedRoute>} />
           <Route path="/paths/new" element={<ProtectedRoute><PathEditorPage /></ProtectedRoute>} />

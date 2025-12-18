@@ -25,11 +25,18 @@ type Character = {
   created_at: string;
 };
 
+type Mood = {
+  id: string;
+  name: string;
+  context: string;
+};
+
 export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [moods, setMoods] = useState<Mood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -73,16 +80,25 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('characters')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [charactersResult, moodsResult] = await Promise.all([
+        supabase
+          .from('characters')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('moods')
+          .select('*')
+          .order('name', { ascending: true })
+      ]);
 
-      if (error) throw error;
-      setCharacters(data || []);
+      if (charactersResult.error) throw charactersResult.error;
+      if (moodsResult.error) throw moodsResult.error;
+      
+      setCharacters(charactersResult.data || []);
+      setMoods(moodsResult.data || []);
     } catch (error) {
-      console.error("Error fetching characters:", error);
-      toast.error("Error loading characters");
+      console.error("Error fetching data:", error);
+      toast.error("Error loading data");
     } finally {
       setIsLoading(false);
     }
@@ -251,8 +267,13 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
                 {...register("mood", { required: "Mood is required" })}
                 className={`form-input ${errors.mood ? 'error' : ''}`}
               >
-                <option value="cooperative">Cooperative</option>
-                <option value="angry">Angry</option>
+                {moods.length === 0 ? (
+                  <option value="">No moods available - create one first</option>
+                ) : (
+                  moods.map((mood) => (
+                    <option key={mood.id} value={mood.name}>{mood.name}</option>
+                  ))
+                )}
               </select>
               {errors.mood && <span className="error-msg">{errors.mood.message}</span>}
             </div>
@@ -331,11 +352,11 @@ export const CharactersPage = ({ isNew }: { isNew?: boolean } = {}) => {
                           textTransform: 'capitalize',
                           padding: '0.25rem 0.75rem',
                           borderRadius: '12px',
-                          backgroundColor: char.mood === 'angry' ? '#fee2e2' : '#dbeafe',
-                          color: char.mood === 'angry' ? '#dc2626' : '#2563eb',
+                          backgroundColor: '#e0e7ff',
+                          color: '#4f46e5',
                           fontWeight: 500
                         }}>
-                          {char.mood || 'cooperative'}
+                          {char.mood || 'N/A'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

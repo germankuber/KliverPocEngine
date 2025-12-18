@@ -1,4 +1,4 @@
-import { Home, PlaySquare, Menu as MenuIcon, ChevronLeft, Bot, Key, MessageSquare, FolderOpen, User, BarChart3, LogOut } from 'lucide-react';
+import { Home, PlaySquare, Menu as MenuIcon, ChevronLeft, Bot, Key, MessageSquare, FolderOpen, User, BarChart3, LogOut, Smile } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -27,6 +27,7 @@ export const Sidebar = () => {
     { path: '/', icon: Home, label: 'Home' },
     { path: '/simulations', icon: PlaySquare, label: 'Simulations' },
     { path: '/characters', icon: User, label: 'Characters' },
+    { path: '/moods', icon: Smile, label: 'Moods' },
     { path: '/paths', icon: FolderOpen, label: 'Paths' },
     { path: '/chats', icon: MessageSquare, label: 'History' },
     { path: '/analyses', icon: BarChart3, label: 'Analyses' },
