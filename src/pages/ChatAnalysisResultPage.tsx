@@ -146,8 +146,8 @@ export const ChatAnalysisResultPage = () => {
 
   const getScoreColor = (score: number | undefined) => {
     if (!score) return 'gray';
-    if (score >= 80) return 'green';
-    if (score >= 60) return 'yellow';
+    if (score >= 4) return 'green';
+    if (score >= 3) return 'yellow';
     return 'red';
   };
 
@@ -186,7 +186,7 @@ export const ChatAnalysisResultPage = () => {
           <div className="score-hero-label">Puntuación General</div>
           <div className="score-hero-value">
             {analysis?.overall_score ?? '—'}
-            <span className="score-hero-max">/100</span>
+            <span className="score-hero-max">/5</span>
           </div>
           <div className="score-hero-description">
             {scoreColor === 'green' && '🎉 Excelente desempeño'}
@@ -452,7 +452,7 @@ export const ChatAnalysisResultPage = () => {
               <div className="skills-list">
                 {analysis.skills.map((sk) => {
                   const skillScore = sk.score || 0;
-                  const skillColor = skillScore >= 80 ? 'green' : skillScore >= 60 ? 'yellow' : 'red';
+                  const skillColor = skillScore >= 4 ? 'green' : skillScore >= 3 ? 'yellow' : 'red';
                   
                   return (
                     <div key={sk.skill_id || sk.skill_name} className={`skill-card skill-${skillColor}`}>

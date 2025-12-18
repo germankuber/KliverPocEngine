@@ -15,6 +15,7 @@ type Message = {
   evaluationResult?: string;
   matchedRules?: string[];
   mood_level?: number;
+  mood_analysis?: string;
 };
 
 export const ChatPage = () => {
@@ -49,6 +50,7 @@ export const ChatPage = () => {
     player_evaluator_prompt?: string;
     player_keypoints_evaluation_prompt?: string;
     character_keypoints_evaluation_prompt?: string;
+    mood_evaluator_prompt?: string;
     langsmith_enabled?: boolean;
     langsmith_api_key?: string;
     langsmith_project?: string;
@@ -863,6 +865,99 @@ export const ChatPage = () => {
     }
   };
 
+  const evaluateMood = async (
+    playerMessage: string,
+    characterResponse: string,
+    characterDescription: string,
+    characterMood: string,
+    currentMoodLevel: number,
+    messageId?: string
+  ) => {
+    try {
+      console.log("😊 Evaluating mood...");
+
+      if (!appSettings?.api_key || !globalPrompts?.mood_evaluator_prompt) {
+        console.error("API Key or mood evaluator prompt is missing");
+        return null;
+      }
+
+      // Replace placeholders in the mood evaluator prompt
+      let moodPrompt = globalPrompts.mood_evaluator_prompt
+        .replace(/{{MOOD}}/g, characterMood)
+        .replace(/{{CURRENT_MOOD_LEVEL}}/g, String(currentMoodLevel))
+        .replace(/{{CHARACTER}}/g, characterDescription)
+        .replace(/{{PLAYER_MESSAGE}}/g, playerMessage)
+        .replace(/{{CHARACTER_RESPONSE}}/g, characterResponse);
+
+      const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
+      
+      const moodEvaluationChat = new ChatOpenAI({
+        apiKey: appSettings.api_key?.trim(),
+        openAIApiKey: appSettings.api_key?.trim(),
+        modelName: appSettings.model || "gpt-3.5-turbo",
+        ...(isReasoningModel ? {} : { temperature: 0 }),
+        // @ts-expect-error - dangerouslyAllowBrowser is not in the types but is supported
+        dangerouslyAllowBrowser: true
+      });
+
+      const moodMessages = [
+        new SystemMessage(moodPrompt),
+        new HumanMessage("Please analyze the mood based on the provided context.")
+      ];
+
+      let moodResult = '';
+      let streamingAnalysis = '';
+      const moodStream = await moodEvaluationChat.stream(moodMessages);
+      
+      for await (const chunk of moodStream) {
+        const chunkContent = chunk.content as string;
+        moodResult += chunkContent;
+        
+        // Try to extract and stream the analysis field in real-time
+        const partialMatch = moodResult.match(/"analysis"\s*:\s*"([^"]*)"/s);
+        if (partialMatch && partialMatch[1] !== streamingAnalysis) {
+          streamingAnalysis = partialMatch[1];
+          
+          // Update message with streaming analysis if messageId provided
+          if (messageId) {
+            setMessages(prev => 
+              prev.map(m => 
+                m.id === messageId 
+                  ? { ...m, mood_analysis: streamingAnalysis }
+                  : m
+              )
+            );
+          }
+        }
+      }
+
+      console.log("📊 Mood Evaluation Result:", moodResult);
+
+      // Parse the JSON response
+      try {
+        const jsonMatch = moodResult.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsedResult = JSON.parse(jsonMatch[0]);
+          console.log("✅ Parsed Mood Result:", parsedResult);
+          
+          return {
+            analysis: parsedResult.analysis,
+            mood_change: parsedResult.mood_change,
+            new_mood_level: parsedResult.new_mood_level
+          };
+        }
+      } catch (parseError) {
+        console.error("Error parsing mood evaluation result:", parseError);
+        console.log("Raw result:", moodResult);
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error evaluating mood:", error);
+      return null;
+    }
+  };
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isLoading || !simulationData) return;
@@ -1028,9 +1123,23 @@ export const ChatPage = () => {
       // Add the loading bot message to UI immediately
       setMessages(prev => [...prev, botMessage]);
 
-      // Get simple text response (no JSON parsing needed)
-      const response = await chat.invoke(history);
-      const displayContent = response.content as string;
+      // Stream the response
+      let displayContent = '';
+      const stream = await chat.stream(history);
+      
+      for await (const chunk of stream) {
+        const chunkContent = chunk.content as string;
+        displayContent += chunkContent;
+        
+        // Update the message in real-time
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === botMessageId 
+              ? { ...m, content: displayContent }
+              : m
+          )
+        );
+      }
 
       let finalBotMessage = { 
         ...botMessage, 
@@ -1050,6 +1159,45 @@ export const ChatPage = () => {
         );
         if (evaluationResult) {
           finalBotMessage = { ...finalBotMessage, ...evaluationResult };
+        }
+      }
+
+      // Evaluate mood if mood_evaluator_prompt is defined
+      if (globalPrompts?.mood_evaluator_prompt) {
+        console.log("😊 Evaluating mood after character response...");
+        
+        // Show mood analysis placeholder while evaluating
+        finalBotMessage = { 
+          ...finalBotMessage, 
+          mood_analysis: '...analyzing mood...'
+        };
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === botMessageId 
+              ? finalBotMessage
+              : m
+          )
+        );
+        
+        const moodEvaluation = await evaluateMood(
+          input, // player's message
+          displayContent, // character's response
+          characterDescription,
+          characterMood,
+          characterIntensity,
+          botMessageId // pass message id for streaming updates
+        );
+
+        if (moodEvaluation) {
+          console.log("✅ Mood evaluation completed:", moodEvaluation);
+          // Update current mood level for next interaction
+          setCurrentMoodLevel(moodEvaluation.new_mood_level);
+          // Add mood analysis and level to the message
+          finalBotMessage = { 
+            ...finalBotMessage, 
+            mood_level: moodEvaluation.new_mood_level,
+            mood_analysis: moodEvaluation.analysis
+          };
         }
       }
 
@@ -1287,6 +1435,15 @@ export const ChatPage = () => {
                         </span>
                       )}
                     </div>
+                    {msg.mood_analysis && (
+                      <div className="mood-analysis">
+                        <span className="mood-icon">😊</span>
+                        <span className="mood-text">{msg.mood_analysis}</span>
+                        {msg.mood_level !== undefined && (
+                          <span className="mood-level"> (Level: {msg.mood_level}/100)</span>
+                        )}
+                      </div>
+                    )}
                     {shouldShowEvaluation && (
                       <div className="rules-evaluation-compact">
                         {msg.matchedRules!.length > 0 ? (

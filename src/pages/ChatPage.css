@@ -698,6 +698,36 @@
   gap: 0.5rem;
 }
 
+.mood-analysis {
+  margin-top: 0.75rem;
+  padding: 0.625rem;
+  background-color: rgba(139, 92, 246, 0.1);
+  border-left: 3px solid #8b5cf6;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: #6b21a8;
+}
+
+.mood-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.mood-text {
+  flex: 1;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.mood-level {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #7c3aed;
+}
+
 .rules-matched-compact {
   display: flex;
   align-items: center;
