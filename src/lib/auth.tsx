@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         // If table doesn't exist or user has no role, default to 'user'
         console.warn('auth.tsx: Error fetching user role (table may not exist yet):', error.message);
+        console.log('auth.tsx: Defaulting to "user" role');
         return 'user';
       }
       
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return role;
     } catch (err) {
       console.warn('auth.tsx: Exception fetching user role:', err);
+      console.log('auth.tsx: Defaulting to "user" role due to exception');
       return 'user';
     }
   };
@@ -87,12 +89,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('auth.tsx: onAuthStateChange - event =', event, 'user =', session?.user?.email);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const role = await fetchUserRole(session.user.id);
-        setUserRole(role);
-      } else {
-        setUserRole(null);
+      
+      // Only update state for actual auth changes, not for TOKEN_REFRESHED
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const role = await fetchUserRole(session.user.id);
+          setUserRole(role);
+        } else {
+          setUserRole(null);
+        }
       }
     });
 
@@ -129,6 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const isAdmin = userRole === 'admin';
+  
+  console.log('auth.tsx: Current state - user =', user?.email, 'userRole =', userRole, 'isAdmin =', isAdmin);
 
   return (
     <AuthContext.Provider value={{ user, userRole, isAdmin, loading, signIn, signUp, signOut }}>

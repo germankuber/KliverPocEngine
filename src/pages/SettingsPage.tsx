@@ -115,10 +115,14 @@ export const SettingsPage = () => {
         })
         .eq('id', globalPrompts.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving global prompts:", error);
+        throw error;
+      }
+      console.log('Global prompts saved successfully');
       toast.success("Global prompts saved successfully");
     } catch (error) {
-      console.error("Error saving global prompts:", error);
+      console.error("Error in handleSavePrompts:", error);
       toast.error("Error saving global prompts");
     } finally {
       setIsSavingPrompts(false);
