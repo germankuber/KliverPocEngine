@@ -75,6 +75,7 @@ export const ChatPage = () => {
   const [showContextModal, setShowContextModal] = useState(false);
   const [contextModalStep, setContextModalStep] = useState(1);
   const [currentMoodLevel, setCurrentMoodLevel] = useState<number | null>(null);
+  const [moodContext, setMoodContext] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -355,6 +356,19 @@ export const ChatPage = () => {
 
       const simData = chatData.simulations;
       setSimulationData(simData);
+
+      // Load mood context if character has a mood
+      if (simData?.characters?.mood) {
+        const { data: moodData } = await supabase
+          .from('moods')
+          .select('context')
+          .eq('name', simData.characters.mood)
+          .single();
+        
+        if (moodData) {
+          setMoodContext(moodData.context);
+        }
+      }
 
       // Initialize mood level from character or from last message
       if (chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0) {
@@ -1091,7 +1105,8 @@ export const ChatPage = () => {
         .replace(/{{CONTEXT}}/g, simulationData.context || "")
         .replace(/{{RULES}}/g, characterKeypoints)
         .replace(/{{MOOD}}/g, characterMood)
-        .replace(/{{MOOD_LEVEL}}/g, String(characterIntensity));
+        .replace(/{{MOOD_LEVEL}}/g, String(characterIntensity))
+        .replace(/{{MOOD_DETAIL}}/g, moodContext || "");
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {

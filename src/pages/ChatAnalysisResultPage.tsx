@@ -172,10 +172,10 @@ export const ChatAnalysisResultPage = () => {
           </div>
           <div className="hero-meta-item">
             <Calendar size={16} />
-            <span className="meta-value">{new Date(updatedAt).toLocaleDateString('es-ES', { 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
+            <span className="meta-value">{new Date(updatedAt).toLocaleDateString('es-ES', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
             })}</span>
           </div>
         </div>
@@ -253,7 +253,7 @@ export const ChatAnalysisResultPage = () => {
                             weight: 'bold',
                           },
                           color: '#374151',
-                          callback: function(label, index) {
+                          callback: function (label, index) {
                             const score = analysis.skills[index]?.score || 0;
                             return `${label}\n(${score})`;
                           },
@@ -347,12 +347,12 @@ export const ChatAnalysisResultPage = () => {
                 {analysis.player_responses_analysis.map((response, idx) => {
                   // Find messages around this turn
                   const messages = Array.isArray(row.messages) ? row.messages : [];
-                  const userMsgIndex = messages.findIndex((m: Message, i: number) => 
+                  const userMsgIndex = messages.findIndex((m: Message, i: number) =>
                     m.role === 'user' && i >= (response.turn_number - 1) * 2
                   );
-                  
+
                   const assistantMsg = messages[userMsgIndex + 1];
-                  
+
                   return (
                     <Accordion.Item key={idx} value={`turn-${response.turn_number}`} className="conversation-turn">
                       <Accordion.Header>
@@ -366,72 +366,72 @@ export const ChatAnalysisResultPage = () => {
                           <span className="turn-arrow">▼</span>
                         </Accordion.Trigger>
                       </Accordion.Header>
-                      
+
                       <Accordion.Content className="accordion-content">
-                      {/* Full conversation messages */}
-                      <div className="conversation-messages">
-                        <div className="chat-message user-message">
-                          <div className="message-header">
-                            <span className="message-role">👤 Tú</span>
-                          </div>
-                          <div className="message-text">
-                            {response.player_message}
-                          </div>
-                        </div>
-                        
-                        {assistantMsg && (
-                          <div className="chat-message assistant-message">
+                        {/* Full conversation messages */}
+                        <div className="conversation-messages">
+                          <div className="chat-message user-message">
                             <div className="message-header">
-                              <span className="message-role">🤖 Personaje</span>
+                              <span className="message-role">👤 Tú</span>
                             </div>
                             <div className="message-text">
-                              {typeof assistantMsg.content === 'string' 
-                                ? assistantMsg.content 
-                                : JSON.stringify(assistantMsg.content)}
+                              {response.player_message}
                             </div>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Analysis and improvement */}
-                      <div className="message-analysis">
-                        <div className="analysis-section">
-                          <h4 className="analysis-title">📊 Análisis de tu respuesta</h4>
-                          {response.what_worked && response.what_worked.length > 0 && (
-                            <div className="message-feedback positive">
-                              <strong>✓ Qué funcionó:</strong>
-                              <ul>
-                                {response.what_worked.map((item, i) => (
-                                  <li key={i}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {response.what_didnt_work && response.what_didnt_work.length > 0 && (
-                            <div className="message-feedback negative">
-                              <strong>✗ Qué no funcionó:</strong>
-                              <ul>
-                                {response.what_didnt_work.map((item, i) => (
-                                  <li key={i}>{item}</li>
-                                ))}
-                              </ul>
+                          {assistantMsg && (
+                            <div className="chat-message assistant-message">
+                              <div className="message-header">
+                                <span className="message-role">🤖 Personaje</span>
+                              </div>
+                              <div className="message-text">
+                                {typeof assistantMsg.content === 'string'
+                                  ? assistantMsg.content
+                                  : JSON.stringify(assistantMsg.content)}
+                              </div>
                             </div>
                           )}
                         </div>
 
-                        <div className="improvement-section">
-                          <h4 className="improvement-title">✨ Versión Mejorada</h4>
-                          <div className="message-improved-box">
-                            {response.improved_version}
+                        {/* Analysis and improvement */}
+                        <div className="message-analysis">
+                          <div className="analysis-section">
+                            <h4 className="analysis-title">📊 Análisis de tu respuesta</h4>
+                            {response.what_worked && response.what_worked.length > 0 && (
+                              <div className="message-feedback positive">
+                                <strong>✓ Qué funcionó:</strong>
+                                <ul>
+                                  {response.what_worked.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {response.what_didnt_work && response.what_didnt_work.length > 0 && (
+                              <div className="message-feedback negative">
+                                <strong>✗ Qué no funcionó:</strong>
+                                <ul>
+                                  {response.what_didnt_work.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
-                          {response.improvement_rationale && (
-                            <div className="message-rationale">
-                              <strong>💡 Por qué es mejor:</strong>
-                              <p>{response.improvement_rationale}</p>
+
+                          <div className="improvement-section">
+                            <h4 className="improvement-title">✨ Versión Mejorada</h4>
+                            <div className="message-improved-box">
+                              {response.improved_version}
                             </div>
-                          )}
+                            {response.improvement_rationale && (
+                              <div className="message-rationale">
+                                <strong>💡 Por qué es mejor:</strong>
+                                <p>{response.improvement_rationale}</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
                       </Accordion.Content>
                     </Accordion.Item>
                   );
@@ -453,7 +453,7 @@ export const ChatAnalysisResultPage = () => {
                 {analysis.skills.map((sk) => {
                   const skillScore = sk.score || 0;
                   const skillColor = skillScore >= 4 ? 'green' : skillScore >= 3 ? 'yellow' : 'red';
-                  
+
                   return (
                     <div key={sk.skill_id || sk.skill_name} className={`skill-card skill-${skillColor}`}>
                       <div className="skill-top">

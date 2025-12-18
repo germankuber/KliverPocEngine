@@ -1,23 +1,29 @@
 .moods-page {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .moods-header {
   margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  max-width: 100%;
 }
 
 .moods-header h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-main);
 }
 
 .moods-header p {
   color: var(--text-secondary);
   font-size: 0.95rem;
+  margin: 0;
 }
 
 .moods-actions {
@@ -27,11 +33,14 @@
 }
 
 .mood-form-container {
-  background: white;
-  border-radius: 12px;
+  background-color: var(--bg-card);
   padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  border: 1px solid var(--border);
   margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mood-form-header {
@@ -39,48 +48,68 @@
 }
 
 .mood-form-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
+  margin: 0;
 }
 
 .mood-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-of-type {
+  margin-bottom: 0;
 }
 
 .form-group label {
-  font-weight: 500;
-  color: var(--text-primary);
-  font-size: 0.95rem;
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 0.85rem;
 }
 
 .form-helper-text {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0.25rem 0 0.5rem 0;
+  line-height: 1.4;
 }
 
 .form-input,
 .form-textarea {
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-sizing: border-box;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+  font-family: inherit;
 }
 
 .form-input.error,
@@ -90,14 +119,17 @@
 
 .error-msg {
   color: #ef4444;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
 }
 
 .form-actions {
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
 }
 
 .moods-grid {
@@ -107,16 +139,18 @@
 }
 
 .mood-card {
-  background: white;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
 }
 
 .mood-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
 }
 
 .mood-card-header {
@@ -125,13 +159,13 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border);
 }
 
 .mood-card-header h3 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
   margin: 0;
   text-transform: capitalize;
 }
@@ -142,25 +176,32 @@
 }
 
 .btn-icon {
-  background: none;
-  border: none;
+  background: #f3f4f6;
+  border: 1px solid var(--border);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   color: var(--text-secondary);
 }
 
 .btn-icon:hover {
-  background-color: #f3f4f6;
-  color: var(--text-primary);
+  background-color: #e5e7eb;
+  color: var(--text-main);
+  border-color: #d1d5db;
+}
+
+.btn-icon.btn-danger {
+  border-color: #fee2e2;
+  color: #ef4444;
 }
 
 .btn-icon.btn-danger:hover {
   background-color: #fee2e2;
+  border-color: #fecaca;
   color: #dc2626;
 }
 
@@ -170,7 +211,7 @@
 
 .mood-context {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.6;
   margin: 0;
 }
@@ -179,28 +220,29 @@
   grid-column: 1 / -1;
   text-align: center;
   padding: 3rem;
-  background: white;
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .empty-state p {
   color: var(--text-secondary);
   margin-bottom: 1.5rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
   border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .btn-primary {
@@ -209,21 +251,23 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-dark);
+  opacity: 0.9;
 }
 
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-secondary {
   background-color: #f3f4f6;
-  color: var(--text-primary);
+  color: var(--text-main);
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
   background-color: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 @media (max-width: 768px) {
@@ -237,5 +281,13 @@
 
   .mood-form-container {
     padding: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
   }
 }
