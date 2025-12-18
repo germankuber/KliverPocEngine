@@ -372,9 +372,6 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
                       </button>
                     </div>
                   </div>
-                  <div className="mood-card-body">
-                    <p className="mood-context">{mood.context}</p>
-                  </div>
                 </div>
               ))
             )}
@@ -386,9 +383,9 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
         isOpen={deleteModalOpen}
         title="Delete Mood"
         message="Are you sure you want to delete this mood? Characters using this mood may be affected."
-        confirmLabel="Delete"
+        confirmText="Delete"
         onConfirm={confirmDelete}
-        onCancel={() => {
+        onClose={() => {
           setDeleteModalOpen(false);
           setMoodToDelete(null);
         }}

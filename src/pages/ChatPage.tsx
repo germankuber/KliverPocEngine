@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, StopCircle, ListChecks, X, Volume2, VolumeX, Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChatOpenAI } from "@langchain/openai";
-import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './ChatPage.css';
@@ -75,7 +75,6 @@ export const ChatPage = () => {
   const [showContextModal, setShowContextModal] = useState(false);
   const [contextModalStep, setContextModalStep] = useState(1);
   const [currentMoodLevel, setCurrentMoodLevel] = useState<number | null>(null);
-  const [moodContext, setMoodContext] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
