@@ -819,32 +819,15 @@ export const ChatPage = () => {
             );
             console.log("✅ Rules matched:", matchedRules);
             
-            // Update rules tracker and check completion
+            // Update rules tracker
             const updatedTracker = { ...rulesTracker };
             matchedRules.forEach(ruleId => {
               updatedTracker[ruleId] = true;
             });
             setRulesTracker(updatedTracker);
 
-            // Check if ALL rules are now matched
-            const allRulesMatched = Object.values(updatedTracker).every(status => status === true);
-            if (allRulesMatched) {
-              console.log("🎉 All rules matched! Showing completion modal");
-              console.log("📊 Updated tracker:", updatedTracker);
-              console.log("🔄 Updating chat status to completed");
-              
-              setCompletionMessage('🎉 Congratulations! You have completed all the keypoints for this simulation!');
-              setShowCompletionModal(true);
-              await updateChatStatus('completed');
-              
-              // If in path mode, update path progress as completed
-              if (isPathMode && pathId) {
-                console.log("🛤️ Path mode detected, updating path progress");
-                await updatePathProgress(true, false);
-              } else {
-                console.log("ℹ️ Not in path mode, skipping path progress update");
-              }
-            }
+            // Return early with the evaluation result
+            // Completion check will be done after this function returns
           } else {
             console.log("⚠️ No keypoints were matched");
           }
@@ -1007,12 +990,33 @@ export const ChatPage = () => {
         userMessage = { ...userMessage, ...playerEvaluationResult };
         const messagesWithEvaluation = [...messages, userMessage];
         setMessages(messagesWithEvaluation);
+        
+        // Check if ALL keypoints are now matched after player evaluation
+        const allRulesMatched = Object.values(rulesTracker).every(status => status === true);
+        if (allRulesMatched) {
+          console.log("🎉 All keypoints matched after player evaluation! Showing completion modal");
+          console.log("📊 Updated tracker:", rulesTracker);
+          console.log("🔄 Updating chat status to completed");
+          
+          setCompletionMessage('🎉 Congratulations! You have completed all the keypoints for this simulation!');
+          setShowCompletionModal(true);
+          await updateChatStatus('completed');
+          
+          // If in path mode, update path progress as completed
+          if (isPathMode && pathId) {
+            console.log("🛤️ Path mode detected, updating path progress");
+            await updatePathProgress(true, false);
+          } else {
+            console.log("ℹ️ Not in path mode, skipping path progress update");
+          }
+        }
       }
     } else {
       console.log("⚠️ Skipping player evaluation - conditions not met");
     }
 
     const updatedMessages = [...messages, userMessage];
+    // Save messages AFTER player evaluation to persist matchedRules
     saveMessages(updatedMessages);
 
     try {
@@ -1177,6 +1181,26 @@ export const ChatPage = () => {
         );
         if (evaluationResult) {
           finalBotMessage = { ...finalBotMessage, ...evaluationResult };
+          
+          // Check if ALL keypoints are now matched after character evaluation
+          const allRulesMatched = Object.values(rulesTracker).every(status => status === true);
+          if (allRulesMatched) {
+            console.log("🎉 All keypoints matched after character evaluation! Showing completion modal");
+            console.log("📊 Updated tracker:", rulesTracker);
+            console.log("🔄 Updating chat status to completed");
+            
+            setCompletionMessage('🎉 Congratulations! You have completed all the keypoints for this simulation!');
+            setShowCompletionModal(true);
+            await updateChatStatus('completed');
+            
+            // If in path mode, update path progress as completed
+            if (isPathMode && pathId) {
+              console.log("🛤️ Path mode detected, updating path progress");
+              await updatePathProgress(true, false);
+            } else {
+              console.log("ℹ️ Not in path mode, skipping path progress update");
+            }
+          }
         }
       }
 
