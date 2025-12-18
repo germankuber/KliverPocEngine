@@ -270,6 +270,56 @@
   border-color: #d1d5db;
 }
 
+.behaviors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.behavior-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.behavior-percentage {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.behavior-percentage input {
+  width: 60px;
+  text-align: right;
+  padding: 0.5rem;
+}
+
+.percentage-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.behavior-prompt {
+  flex: 1;
+}
+
+.behavior-prompt textarea {
+  margin: 0;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 768px) {
   .moods-page {
     padding: 1rem;
@@ -288,6 +338,14 @@
   }
 
   .btn {
+    width: 100%;
+  }
+
+  .behavior-item {
+    flex-direction: column;
+  }
+
+  .behavior-percentage {
     width: 100%;
   }
 }

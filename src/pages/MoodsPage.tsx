@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Toaster, toast } from 'react-hot-toast';
@@ -9,17 +9,22 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import './MoodsPage.css';
 
+type MoodBehavior = {
+  id?: string;
+  percentage: number;
+  behavior_prompt: string;
+};
+
 type MoodInputs = {
   name: string;
-  context: string;
 };
 
 type Mood = {
   id: string;
   name: string;
-  context: string;
   created_at: string;
   user_id: string;
+  behaviors?: MoodBehavior[];
 };
 
 export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
@@ -27,6 +32,7 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [moods, setMoods] = useState<Mood[]>([]);
+  const [behaviors, setBehaviors] = useState<MoodBehavior[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -35,8 +41,7 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<MoodInputs>({
     defaultValues: {
-      name: "",
-      context: ""
+      name: ""
     }
   });
 
@@ -49,6 +54,7 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
   useEffect(() => {
     if (isNew) {
       reset();
+      setBehaviors([]);
       return;
     }
 
@@ -56,7 +62,7 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
       const mood = moods.find(m => m.id === id);
       if (mood) {
         setValue('name', mood.name);
-        setValue('context', mood.context);
+        loadBehaviors(id);
       }
     }
   }, [id, isNew, moods, setValue, reset]);
@@ -79,36 +85,80 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
     }
   };
 
+  const loadBehaviors = async (moodId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('mood_behaviors')
+        .select('*')
+        .eq('mood_id', moodId)
+        .order('percentage', { ascending: true });
+
+      if (error) throw error;
+      setBehaviors(data || []);
+    } catch (error) {
+      console.error("Error loading behaviors:", error);
+      toast.error("Error loading behaviors");
+    }
+  };
+
   const onSubmit: SubmitHandler<MoodInputs> = async (formData) => {
     setIsCreating(true);
     try {
+      let moodId = id;
+      
       if (id && !isNew) {
         // Update existing mood
         const { error } = await supabase
           .from('moods')
           .update({
-            name: formData.name,
-            context: formData.context,
+            name: formData.name
           })
           .eq('id', id);
 
         if (error) throw error;
-        toast.success("Mood updated successfully!");
       } else {
         // Create new mood
-        const { error } = await supabase
+        const { data: newMood, error } = await supabase
           .from('moods')
           .insert([{
             name: formData.name,
-            context: formData.context,
             user_id: user?.id
-          }]);
+          }])
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success("Mood created successfully!");
-        reset();
+        moodId = newMood.id;
+      }
+
+      // Save behaviors
+      if (moodId) {
+        // Delete existing behaviors
+        await supabase
+          .from('mood_behaviors')
+          .delete()
+          .eq('mood_id', moodId);
+
+        // Insert new behaviors
+        if (behaviors.length > 0) {
+          const behaviorData = behaviors.map(b => ({
+            mood_id: moodId,
+            percentage: b.percentage,
+            behavior_prompt: b.behavior_prompt,
+            user_id: user?.id
+          }));
+
+          const { error: behaviorError } = await supabase
+            .from('mood_behaviors')
+            .insert(behaviorData);
+
+          if (behaviorError) throw behaviorError;
+        }
       }
       
+      toast.success(id && !isNew ? "Mood updated successfully!" : "Mood created successfully!");
+      reset();
+      setBehaviors([]);
       await fetchData();
       navigate('/moods');
     } catch (error: any) {
@@ -154,7 +204,22 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
 
   const handleCancel = () => {
     reset();
+    setBehaviors([]);
     navigate('/moods');
+  };
+
+  const addBehavior = () => {
+    setBehaviors([...behaviors, { percentage: 0, behavior_prompt: '' }]);
+  };
+
+  const removeBehavior = (index: number) => {
+    setBehaviors(behaviors.filter((_, i) => i !== index));
+  };
+
+  const updateBehavior = (index: number, field: 'percentage' | 'behavior_prompt', value: string | number) => {
+    const updated = [...behaviors];
+    updated[index] = { ...updated[index], [field]: value };
+    setBehaviors(updated);
   };
 
   if (isLoading) {
@@ -191,16 +256,54 @@ export const MoodsPage = ({ isNew }: { isNew?: boolean } = {}) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="context">Context</label>
-              <p className="form-helper-text">Describe how this mood affects character behavior and responses</p>
-              <textarea
-                id="context"
-                rows={4}
-                {...register("context", { required: "Context is required" })}
-                className={`form-textarea ${errors.context ? 'error' : ''}`}
-                placeholder="e.g., The character is friendly, helpful, and willing to collaborate with others."
-              />
-              {errors.context && <span className="error-msg">{errors.context.message}</span>}
+              <label>Behavior Levels</label>
+              <p className="form-helper-text">Define how the character behaves at different intensity levels (percentage)</p>
+              
+              <div className="behaviors-list">
+                {behaviors.map((behavior, index) => (
+                  <div key={index} className="behavior-item">
+                    <div className="behavior-percentage">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={behavior.percentage}
+                        onChange={(e) => updateBehavior(index, 'percentage', parseInt(e.target.value) || 0)}
+                        className="form-input"
+                        placeholder="%"
+                      />
+                      <span className="percentage-label">%</span>
+                    </div>
+                    <div className="behavior-prompt">
+                      <textarea
+                        value={behavior.behavior_prompt}
+                        onChange={(e) => updateBehavior(index, 'behavior_prompt', e.target.value)}
+                        className="form-textarea"
+                        rows={2}
+                        placeholder="Describe behavior at this intensity level..."
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeBehavior(index)}
+                      className="btn-icon btn-danger"
+                      title="Remove"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <button
+                type="button"
+                onClick={addBehavior}
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: '0.75rem' }}
+              >
+                <Plus size={16} />
+                Add Behavior Level
+              </button>
             </div>
 
             <div className="form-actions">

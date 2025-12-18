@@ -357,19 +357,6 @@ export const ChatPage = () => {
       const simData = chatData.simulations;
       setSimulationData(simData);
 
-      // Load mood context if character has a mood
-      if (simData?.characters?.mood) {
-        const { data: moodData } = await supabase
-          .from('moods')
-          .select('context')
-          .eq('name', simData.characters.mood)
-          .single();
-        
-        if (moodData) {
-          setMoodContext(moodData.context);
-        }
-      }
-
       // Initialize mood level from character or from last message
       if (chatData.messages && Array.isArray(chatData.messages) && chatData.messages.length > 0) {
         // Find the last assistant message with mood_level
@@ -1098,6 +1085,51 @@ export const ChatPage = () => {
       // Use current mood level (from last message) or initial character intensity
       const characterIntensity = currentMoodLevel ?? simulationData.characters?.intensity ?? 50;
 
+      // Load appropriate behavior based on mood level
+      let moodBehaviorPrompt = "";
+      if (simulationData.characters?.mood) {
+        // Get mood ID first
+        const { data: moodData } = await supabase
+          .from('moods')
+          .select('id')
+          .eq('name', characterMood)
+          .single();
+
+        if (moodData) {
+          // Get all behaviors for this mood
+          const { data: behaviors } = await supabase
+            .from('mood_behaviors')
+            .select('*')
+            .eq('mood_id', moodData.id)
+            .order('percentage', { ascending: true });
+
+          if (behaviors && behaviors.length > 0) {
+            // Sort behaviors by percentage ascending to create ranges
+            // Find the appropriate behavior range based on character intensity
+            // Each behavior percentage represents the START of a range
+            let matchingBehavior = behaviors[0]; // Default to lowest range
+            
+            for (let i = 0; i < behaviors.length; i++) {
+              if (characterIntensity >= behaviors[i].percentage) {
+                matchingBehavior = behaviors[i];
+              } else {
+                break; // Stop when we find a range we don't reach
+              }
+            }
+            
+            if (matchingBehavior) {
+              moodBehaviorPrompt = matchingBehavior.behavior_prompt;
+            }
+          }
+        }
+      }
+
+      // Build conversation history with only assistant messages
+      const conversationHistory = updatedMessages
+        .filter(m => m.role === 'assistant')
+        .map(m => `- ${m.content}`)
+        .join('\n');
+
       // Replace wildcards - solo los que existen en el template
       systemMessageContent = systemMessageContent
         .replace(/{{CHARACTER}}/g, characterDescription)
@@ -1106,7 +1138,8 @@ export const ChatPage = () => {
         .replace(/{{RULES}}/g, characterKeypoints)
         .replace(/{{MOOD}}/g, characterMood)
         .replace(/{{MOOD_LEVEL}}/g, String(characterIntensity))
-        .replace(/{{MOOD_DETAIL}}/g, moodContext || "");
+        .replace(/{{MOOD_DETAIL}}/g, moodBehaviorPrompt)
+        .replace(/{{CONVERSATION_HISTORY}}/g, conversationHistory);
 
       // Append if wildcards were NOT used (legacy behavior / fallback)
       if (!systemMessageContent.includes(characterDescription) && characterDescription) {
@@ -1121,9 +1154,11 @@ export const ChatPage = () => {
       if (characterKeypoints && !systemMessageContent.includes(characterKeypoints)) {
         systemMessageContent += `\n\nCharacter Keypoints:\n${characterKeypoints}`;
       }
+      
+      // History now only includes system message and the current user message
       const history = [
         new SystemMessage(systemMessageContent),
-        ...updatedMessages.map(m => m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content))
+        new HumanMessage(input)
       ];
 
       // Create a temporary bot message to show loading state
