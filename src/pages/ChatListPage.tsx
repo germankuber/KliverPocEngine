@@ -361,6 +361,7 @@ export const ChatListPage = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      navigate(`/chat/${chat.id}`);
                     }}
                     title="Continue chat"
                   >
