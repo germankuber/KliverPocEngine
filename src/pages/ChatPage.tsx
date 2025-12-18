@@ -1015,37 +1015,6 @@ export const ChatPage = () => {
     const updatedMessages = [...messages, userMessage];
     saveMessages(updatedMessages);
 
-    // Check interaction limit
-    const assistantMessagesCount = updatedMessages.filter(m => m.role === 'assistant').length;
-    const maxInteractions = simulationData.max_interactions || 10;
-
-    if (assistantMessagesCount >= maxInteractions) {
-      setTimeout(async () => {
-        const limitMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: "❌ **Simulation Failed:** Maximum interaction limit reached without completing all objectives.",
-          timestamp: new Date()
-        };
-        const finalMessages = [...updatedMessages, limitMessage];
-        setMessages(finalMessages);
-        saveMessages(finalMessages);
-        
-        // Mark as failed
-        await updateChatStatus('failed');
-        
-        // If in path mode, update path progress as failed
-        if (isPathMode && pathId) {
-          await updatePathProgress(false, true);
-        }
-        
-        setCompletionMessage('❌ Simulation Failed: You reached the maximum number of interactions without completing all objectives.');
-        setShowCompletionModal(true);
-        setIsLoading(false);
-      }, 500);
-      return;
-    }
-
     try {
       // GPT-5 models (reasoning models) do not support temperature parameter
       const isReasoningModel = appSettings.model?.startsWith('gpt-5') || appSettings.model?.startsWith('o1');
@@ -1253,6 +1222,39 @@ export const ChatPage = () => {
       const finalMessages = [...updatedMessages, finalBotMessage];
       setMessages(finalMessages);
       saveMessages(finalMessages);
+
+      // Check interaction limit AFTER assistant response
+      const assistantMessagesCount = finalMessages.filter(m => m.role === 'assistant').length;
+      const maxInteractions = simulationData.max_interactions || 10;
+
+      if (assistantMessagesCount >= maxInteractions) {
+        // Mark as failed IMMEDIATELY to disable input
+        setChatStatus('failed');
+        await updateChatStatus('failed');
+        
+        // If in path mode, update path progress as failed
+        if (isPathMode && pathId) {
+          await updatePathProgress(false, true);
+        }
+        
+        // Wait 2 seconds before showing completion modal
+        setTimeout(async () => {
+          const limitMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "❌ **Simulation Failed:** Maximum interaction limit reached without completing all objectives.",
+            timestamp: new Date()
+          };
+          const messagesWithLimit = [...finalMessages, limitMessage];
+          setMessages(messagesWithLimit);
+          saveMessages(messagesWithLimit);
+          
+          setCompletionMessage('❌ Simulation Failed: You reached the maximum number of interactions without completing all objectives.');
+          setShowCompletionModal(true);
+        }, 2000);
+        setIsLoading(false);
+        return;
+      }
 
       // If voice mode is enabled, play the response
       if (voiceEnabled && displayContent) {
